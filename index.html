@@ -115,29 +115,31 @@
                         <button type="button" id="tabProfessional" class="tab-btn px-4 py-2 rounded-t-lg text-sm">📄 Professional</button>
                     </div>
 
+                    <!-- ✅ CORRECTED TECHNICAL PRICES -->
                     <div id="technicalTab" class="tab-content active space-y-2 mb-4">
                         <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                            <input type="radio" name="service" value="Windows 11 installation + permanent activation" data-price="45" class="mr-3">
-                            <span class="flex-1">Windows 11 installation + activation</span>
-                            <span class="font-bold text-indigo-700">M45</span>
+                            <input type="radio" name="service" value="Windows 11 installation + permanent activation" data-price="250" class="mr-3">
+                            <span class="flex-1">Windows 11 installation + permanent activation</span>
+                            <span class="font-bold text-indigo-700">M250</span>
                         </label>
                         <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                            <input type="radio" name="service" value="Windows 11 installation (without activation)" data-price="0" class="mr-3">
-                            <span class="flex-1">Windows 11 installation (no activation)</span>
-                            <span class="font-bold text-gray-500">Free</span>
+                            <input type="radio" name="service" value="Windows 11 installation (without activation)" data-price="150" class="mr-3">
+                            <span class="flex-1">Windows 11 installation (without activation)</span>
+                            <span class="font-bold text-indigo-700">M150</span>
                         </label>
                         <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                            <input type="radio" name="service" value="Office 2021 installation" data-price="0" class="mr-3">
+                            <input type="radio" name="service" value="Office 2021 installation" data-price="100" class="mr-3">
                             <span class="flex-1">Office 2021 installation</span>
-                            <span class="font-bold text-gray-500">Free</span>
+                            <span class="font-bold text-indigo-700">M100</span>
                         </label>
                         <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                            <input type="radio" name="service" value="Office 2021 activation" data-price="0" class="mr-3">
+                            <input type="radio" name="service" value="Office 2021 activation" data-price="80" class="mr-3">
                             <span class="flex-1">Office 2021 activation</span>
-                            <span class="font-bold text-gray-500">Free</span>
+                            <span class="font-bold text-indigo-700">M80</span>
                         </label>
                     </div>
 
+                    <!-- ✅ CORRECTED PROFESSIONAL PRICES -->
                     <div id="professionalTab" class="tab-content space-y-2 mb-4">
                         <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
                             <input type="radio" name="service" value="Professional CV" data-price="45" class="mr-3">
@@ -200,7 +202,6 @@
     </div>
 
     <script>
-        // WAIT FOR EVERYTHING TO LOAD
         window.addEventListener('load', function() {
             
             const SUPABASE_URL = 'https://kqzauqxyvqgncebyulds.supabase.co';
@@ -209,7 +210,6 @@
             const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             let allClients = [];
 
-            // Helper functions
             function openModal(id) { document.getElementById(id).classList.add('active'); }
             function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
@@ -273,7 +273,6 @@
                 openModal('clientDetailModal');
             }
 
-            // Set up all event listeners
             loadAllData();
             
             document.getElementById('btnNewClient').addEventListener('click', () => openModal('newClientModal'));
