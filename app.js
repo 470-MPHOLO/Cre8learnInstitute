@@ -1,8 +1,8 @@
 // =============================================
-// CONFIGURATION - REPLACE WITH YOUR SUPABASE KEYS
+// CONFIGURATION - YOUR ACTUAL SUPABASE KEYS
 // =============================================
-const SUPABASE_URL = 'https://YOUR-PROJECT-ID.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR-ANON-KEY';
+const SUPABASE_URL = 'https://kqzauqxyvqgncebyulds.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxemF1cXh5dnFnbmNlYnl1bGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MzM0NDUsImV4cCI6MjA5MTQwOTQ0NX0.SyGcJfsOYdkeo0K6szjU8OIv4Hb1g2CXzfD57Vo_PjU';
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // DATA LOADING
 // =============================================
 async function loadAllData() {
-    // Load clients with their stats
+    // Load clients
     const { data: clients, error } = await supabase
         .from('clients')
         .select('*')
@@ -44,6 +44,15 @@ async function loadAllData() {
     
     if (error) {
         console.error('Error loading clients:', error);
+        document.getElementById('clientTableBody').innerHTML = 
+            `<tr><td colspan="6" class="p-8 text-center text-red-500">Error: ${error.message}</td></tr>`;
+        return;
+    }
+    
+    if (!clients || clients.length === 0) {
+        allClients = [];
+        renderClientTable();
+        updateStats();
         return;
     }
     
@@ -78,10 +87,15 @@ async function loadAllData() {
 }
 
 async function loadClientDropdown() {
-    const { data: clients } = await supabase
+    const { data: clients, error } = await supabase
         .from('clients')
         .select('id, name')
         .order('name');
+    
+    if (error) {
+        console.error('Error loading client dropdown:', error);
+        return;
+    }
     
     const select = document.getElementById('serviceClientSelect');
     select.innerHTML = '<option value="">-- Choose Client --</option>' +
@@ -98,6 +112,11 @@ async function handleNewClient(e) {
     const phone = document.getElementById('clientPhone').value.trim();
     const email = document.getElementById('clientEmail').value.trim();
     
+    if (!name) {
+        alert('Client name is required');
+        return;
+    }
+    
     const { data, error } = await supabase
         .from('clients')
         .insert([{ 
@@ -109,6 +128,7 @@ async function handleNewClient(e) {
     
     if (error) {
         alert('Error: ' + error.message);
+        console.error('Insert error:', error);
         return;
     }
     
@@ -146,9 +166,10 @@ async function handleLogService(e) {
     let amount = parseFloat(document.getElementById('serviceAmount').value) || parseFloat(serviceRadio.dataset.price) || 0;
     const notes = document.getElementById('serviceNotes').value;
     
-    // Check if discount applies (3rd+ visit)
+    // Check if discount applies (3rd+ visit = 2 or more previous visits)
     const client = allClients.find(c => c.id === clientId);
-    const isDiscounted = client && client.visitCount >= 2; // 2 previous visits = this is 3rd
+    const previousVisits = client?.visitCount || 0;
+    const isDiscounted = previousVisits >= 2; // This will be their 3rd+ visit
     
     if (isDiscounted) {
         amount = amount * 0.8; // 20% off
@@ -166,23 +187,27 @@ async function handleLogService(e) {
     
     if (error) {
         alert('Error logging service: ' + error.message);
+        console.error('Insert error:', error);
         return;
     }
     
     // Check if this was their 3rd visit (milestone)
-    const newVisitCount = (client?.visitCount || 0) + 1;
+    const newVisitCount = previousVisits + 1;
     
     closeModal('logServiceModal');
     document.getElementById('logServiceForm').reset();
     document.getElementById('discountNotice').classList.add('hidden');
     
     await loadAllData();
+    await loadClientDropdown();
     
     if (newVisitCount === 3) {
         const clientName = client?.name || 'Client';
         alert(`🎉 MILESTONE! ${clientName} just completed their 3rd visit and received 20% off!\n\nThey are now a VIP loyalty member.`);
     } else if (isDiscounted) {
         alert(`✅ Service logged with 20% loyalty discount applied.`);
+    } else {
+        alert(`✅ Service logged successfully.`);
     }
 }
 
@@ -192,6 +217,14 @@ async function handleLogService(e) {
 function renderClientTable(filterText = '') {
     const tbody = document.getElementById('clientTableBody');
     
+    if (!allClients || allClients.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-400">
+            No clients yet. Click "New Client" to get started.
+        </td></tr>`;
+        document.getElementById('totalClients').textContent = '0';
+        return;
+    }
+    
     const filteredClients = allClients.filter(c => 
         c.name.toLowerCase().includes(filterText.toLowerCase()) ||
         (c.phone && c.phone.includes(filterText)) ||
@@ -199,15 +232,15 @@ function renderClientTable(filterText = '') {
     );
     
     if (filteredClients.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-400">No clients found</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-400">No clients match your search</td></tr>`;
         return;
     }
     
     tbody.innerHTML = filteredClients.map(client => `
         <tr class="border-b hover:bg-gray-50 transition">
             <td class="p-4">
-                <div class="font-medium text-gray-900">${client.name}</div>
-                <div class="text-sm text-gray-500">${client.phone || 'No phone'} ${client.email ? '· ' + client.email : ''}</div>
+                <div class="font-medium text-gray-900">${escapeHtml(client.name)}</div>
+                <div class="text-sm text-gray-500">${escapeHtml(client.phone || 'No phone')} ${client.email ? '· ' + escapeHtml(client.email) : ''}</div>
             </td>
             <td class="p-4">
                 <span class="font-mono text-lg font-bold ${client.visitCount >= 3 ? 'text-green-600' : 'text-gray-700'}">
@@ -223,9 +256,9 @@ function renderClientTable(filterText = '') {
                 }
             </td>
             <td class="p-4 font-medium text-purple-700">M${client.totalSpent.toFixed(2)}</td>
-            <td class="p-4 text-sm text-gray-600 max-w-[200px] truncate">${client.lastService}</td>
+            <td class="p-4 text-sm text-gray-600 max-w-[200px] truncate">${escapeHtml(client.lastService)}</td>
             <td class="p-4">
-                <button onclick='viewClientHistory(${JSON.stringify(client.id)})' class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                <button onclick='viewClientHistory("${client.id}")' class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
                     View History →
                 </button>
             </td>
@@ -249,7 +282,7 @@ async function viewClientHistory(clientId) {
     const client = allClients.find(c => c.id === clientId);
     if (!client) return;
     
-    document.getElementById('detailClientName').textContent = `${client.name} — Service History`;
+    document.getElementById('detailClientName').textContent = `${escapeHtml(client.name)} — Service History`;
     
     const services = client.services || [];
     
@@ -264,9 +297,9 @@ async function viewClientHistory(clientId) {
                     <div class="border rounded-lg p-4 ${s.discounted ? 'bg-green-50 border-green-200' : 'bg-gray-50'}">
                         <div class="flex justify-between items-start">
                             <div>
-                                <div class="font-medium">${s.service_name}</div>
+                                <div class="font-medium">${escapeHtml(s.service_name)}</div>
                                 <div class="text-sm text-gray-500">${new Date(s.created_at).toLocaleDateString('en-GB')}</div>
-                                ${s.notes ? `<div class="text-sm text-gray-400 mt-1">📝 ${s.notes}</div>` : ''}
+                                ${s.notes ? `<div class="text-sm text-gray-400 mt-1">📝 ${escapeHtml(s.notes)}</div>` : ''}
                             </div>
                             <div class="text-right">
                                 <div class="font-bold ${s.discounted ? 'text-green-700' : 'text-gray-900'}">
@@ -291,6 +324,13 @@ async function viewClientHistory(clientId) {
 // =============================================
 // HELPER FUNCTIONS
 // =============================================
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function checkDiscountEligibility() {
     const clientId = document.getElementById('serviceClientSelect').value;
     const client = allClients.find(c => c.id === clientId);
@@ -349,4 +389,13 @@ document.querySelectorAll('.modal').forEach(modal => {
             modal.classList.remove('active');
         }
     });
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal.active').forEach(modal => {
+            modal.classList.remove('active');
+        });
+    }
 });
