@@ -17,7 +17,6 @@
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
     
-    <!-- Header -->
     <header class="bg-gradient-to-r from-indigo-900 to-purple-900 text-white p-6 shadow-lg">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div>
@@ -31,23 +30,20 @@
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="max-w-7xl mx-auto p-6">
         
-        <!-- Quick Actions Bar -->
         <div class="flex gap-3 mb-6">
-            <button onclick="openNewClientModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition flex items-center gap-2">
+            <button onclick="window.openNewClientModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition flex items-center gap-2">
                 <span class="text-xl">+</span> New Client
             </button>
-            <button onclick="openLogServiceModal()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition flex items-center gap-2">
+            <button onclick="window.openLogServiceModal()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition flex items-center gap-2">
                 <span class="text-xl">📋</span> Log Service
             </button>
         </div>
 
-        <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="bg-white p-5 rounded-xl shadow-sm border">
-                <div class="text-gray-500 text-sm mb-1">🔁 Total Services Logged</div>
+                <div class="text-gray-500 text-sm mb-1">🔁 Total Services</div>
                 <div id="totalServices" class="text-3xl font-bold text-indigo-700">0</div>
             </div>
             <div class="bg-white p-5 rounded-xl shadow-sm border">
@@ -60,11 +56,10 @@
             </div>
         </div>
 
-        <!-- Client List Table -->
         <div class="bg-white rounded-xl shadow-md border overflow-hidden">
             <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
                 <h2 class="font-semibold text-gray-800 text-lg">📋 Client Directory</h2>
-                <input type="text" id="searchInput" placeholder="Search clients..." class="px-4 py-2 border rounded-lg text-sm w-64 focus:ring-2 focus:ring-indigo-300 outline-none" onkeyup="filterClients()">
+                <input type="text" id="searchInput" placeholder="Search clients..." class="px-4 py-2 border rounded-lg text-sm w-64 focus:ring-2 focus:ring-indigo-300 outline-none" onkeyup="window.filterClients()">
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
@@ -79,57 +74,57 @@
                         </tr>
                     </thead>
                     <tbody id="clientTableBody">
-                        <tr><td colspan="6" class="p-8 text-center text-gray-400">Loading clients...</td></tr>
+                        <tr><td colspan="6" class="p-8 text-center text-gray-400">Loading...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </main>
 
-    <!-- MODAL 1: New Client -->
+    <!-- New Client Modal -->
     <div id="newClientModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
             <div class="p-6">
                 <h3 class="text-xl font-bold mb-4">➕ Register New Client</h3>
                 <form id="newClientForm">
-                    <input type="text" id="clientName" placeholder="Full Name" required class="w-full p-3 border rounded-lg mb-3 focus:ring-2 focus:ring-indigo-300 outline-none">
-                    <input type="text" id="clientPhone" placeholder="Phone Number" class="w-full p-3 border rounded-lg mb-3 focus:ring-2 focus:ring-indigo-300 outline-none">
-                    <input type="email" id="clientEmail" placeholder="Email (optional)" class="w-full p-3 border rounded-lg mb-4 focus:ring-2 focus:ring-indigo-300 outline-none">
+                    <input type="text" id="clientName" placeholder="Full Name" required class="w-full p-3 border rounded-lg mb-3">
+                    <input type="text" id="clientPhone" placeholder="Phone Number" class="w-full p-3 border rounded-lg mb-3">
+                    <input type="email" id="clientEmail" placeholder="Email (optional)" class="w-full p-3 border rounded-lg mb-4">
                     <div class="flex gap-3">
-                        <button type="submit" class="bg-indigo-600 text-white px-4 py-3 rounded-lg flex-1 font-medium hover:bg-indigo-700 transition">Register</button>
-                        <button type="button" onclick="closeModal('newClientModal')" class="bg-gray-200 px-4 py-3 rounded-lg flex-1 font-medium hover:bg-gray-300 transition">Cancel</button>
+                        <button type="submit" class="bg-indigo-600 text-white px-4 py-3 rounded-lg flex-1">Register</button>
+                        <button type="button" onclick="window.closeModal('newClientModal')" class="bg-gray-200 px-4 py-3 rounded-lg flex-1">Cancel</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- MODAL 2: Log Service -->
+    <!-- Log Service Modal -->
     <div id="logServiceModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             <div class="p-6">
                 <h3 class="text-xl font-bold mb-4">📋 Log Service for Client</h3>
                 <form id="logServiceForm">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Select Client</label>
-                    <select id="serviceClientSelect" required class="w-full p-3 border rounded-lg mb-4 focus:ring-2 focus:ring-indigo-300 outline-none">
+                    <select id="serviceClientSelect" required class="w-full p-3 border rounded-lg mb-4">
                         <option value="">-- Choose Client --</option>
                     </select>
 
                     <label class="block text-sm font-medium text-gray-700 mb-2">Select Service</label>
                     <div class="flex gap-2 mb-3 border-b">
-                        <button type="button" class="tab-btn active px-4 py-2 rounded-t-lg text-sm font-medium" onclick="switchServiceTab('technical')">💻 Technical</button>
-                        <button type="button" class="tab-btn px-4 py-2 rounded-t-lg text-sm font-medium" onclick="switchServiceTab('professional')">📄 Professional</button>
+                        <button type="button" class="tab-btn active px-4 py-2 rounded-t-lg text-sm" onclick="window.switchTab('technical')">💻 Technical</button>
+                        <button type="button" class="tab-btn px-4 py-2 rounded-t-lg text-sm" onclick="window.switchTab('professional')">📄 Professional</button>
                     </div>
 
                     <div id="technicalTab" class="tab-content active space-y-2 mb-4">
                         <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
                             <input type="radio" name="service" value="Windows 11 installation + permanent activation" data-price="45" class="mr-3">
-                            <span class="flex-1">Windows 11 installation + permanent activation</span>
+                            <span class="flex-1">Windows 11 installation + activation</span>
                             <span class="font-bold text-indigo-700">M45</span>
                         </label>
                         <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
                             <input type="radio" name="service" value="Windows 11 installation (without activation)" data-price="0" class="mr-3">
-                            <span class="flex-1">Windows 11 installation (without activation)</span>
+                            <span class="flex-1">Windows 11 installation (no activation)</span>
                             <span class="font-bold text-gray-500">Free</span>
                         </label>
                         <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
@@ -173,18 +168,18 @@
                     </div>
 
                     <div id="discountNotice" class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 hidden">
-                        <span class="text-green-800">🎉 This client qualifies for 20% discount on this service!</span>
+                        <span class="text-green-800">🎉 This client qualifies for 20% discount!</span>
                     </div>
 
                     <label class="block text-sm font-medium text-gray-700 mb-1">Amount Paid (M)</label>
-                    <input type="number" id="serviceAmount" placeholder="Auto-filled from selection" step="0.01" class="w-full p-3 border rounded-lg mb-3 focus:ring-2 focus:ring-indigo-300 outline-none">
+                    <input type="number" id="serviceAmount" placeholder="Auto-filled" step="0.01" class="w-full p-3 border rounded-lg mb-3">
 
                     <label class="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
-                    <input type="text" id="serviceNotes" placeholder="e.g., Paid via cash" class="w-full p-3 border rounded-lg mb-4 focus:ring-2 focus:ring-indigo-300 outline-none">
+                    <input type="text" id="serviceNotes" placeholder="e.g., Paid via cash" class="w-full p-3 border rounded-lg mb-4">
 
                     <div class="flex gap-3">
-                        <button type="submit" class="bg-green-600 text-white px-4 py-3 rounded-lg flex-1 font-medium hover:bg-green-700 transition">Log Service</button>
-                        <button type="button" onclick="closeModal('logServiceModal')" class="bg-gray-200 px-4 py-3 rounded-lg flex-1 font-medium hover:bg-gray-300 transition">Cancel</button>
+                        <button type="submit" class="bg-green-600 text-white px-4 py-3 rounded-lg flex-1">Log Service</button>
+                        <button type="button" onclick="window.closeModal('logServiceModal')" class="bg-gray-200 px-4 py-3 rounded-lg flex-1">Cancel</button>
                     </div>
                 </form>
             </div>
@@ -197,45 +192,41 @@
             <div class="p-6">
                 <div class="flex justify-between items-start mb-4">
                     <h3 class="text-xl font-bold" id="detailClientName">Client History</h3>
-                    <button onclick="closeModal('clientDetailModal')" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                    <button onclick="window.closeModal('clientDetailModal')" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                 </div>
                 <div id="clientHistoryContent">
-                    <p class="text-gray-500">Loading history...</p>
+                    <p class="text-gray-500">Loading...</p>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // =============================================
-        // SUPABASE CONFIGURATION
-        // =============================================
+        // ONE SINGLE SCRIPT - NO DUPLICATES
+        
         const SUPABASE_URL = 'https://kqzauqxyvqgncebyulds.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxemF1cXh5dnFnbmNlYnl1bGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MzM0NDUsImV4cCI6MjA5MTQwOTQ0NX0.SyGcJfsOYdkeo0K6szjU8OIv4Hb1g2CXzfD57Vo_PjU';
         
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let allClients = [];
 
-        // =============================================
-        // GLOBAL FUNCTIONS (Called from buttons)
-        // =============================================
-        function openNewClientModal() {
+        // GLOBAL FUNCTIONS
+        window.openNewClientModal = function() {
             document.getElementById('newClientModal').classList.add('active');
-        }
+        };
 
-        function openLogServiceModal() {
+        window.openLogServiceModal = function() {
             document.getElementById('logServiceModal').classList.add('active');
             loadClientDropdown();
-        }
+        };
 
-        function closeModal(modalId) {
+        window.closeModal = function(modalId) {
             document.getElementById(modalId).classList.remove('active');
-        }
+        };
 
-        function switchServiceTab(tab) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        window.switchTab = function(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
             if (tab === 'technical') {
                 document.querySelectorAll('.tab-btn')[0].classList.add('active');
                 document.getElementById('technicalTab').classList.add('active');
@@ -243,23 +234,23 @@
                 document.querySelectorAll('.tab-btn')[1].classList.add('active');
                 document.getElementById('professionalTab').classList.add('active');
             }
-        }
+        };
 
-        function filterClients() {
+        window.filterClients = function() {
             const search = document.getElementById('searchInput').value;
-            renderClientTable(search);
-        }
+            renderTable(search);
+        };
 
-        async function viewClientHistory(clientId) {
+        window.viewHistory = async function(clientId) {
             const client = allClients.find(c => c.id === clientId);
             if (!client) return;
             
             document.getElementById('detailClientName').textContent = client.name + ' — Service History';
-            const services = client.services || [];
             const content = document.getElementById('clientHistoryContent');
+            const services = client.services || [];
             
             if (services.length === 0) {
-                content.innerHTML = '<p class="text-gray-500 text-center py-8">No services logged yet.</p>';
+                content.innerHTML = '<p class="text-gray-500 text-center py-8">No services yet.</p>';
             } else {
                 content.innerHTML = `
                     <div class="space-y-3">
@@ -287,11 +278,9 @@
             }
             
             document.getElementById('clientDetailModal').classList.add('active');
-        }
+        };
 
-        // =============================================
         // DATA LOADING
-        // =============================================
         async function loadAllData() {
             const { data: clients, error } = await supabase
                 .from('clients')
@@ -299,15 +288,13 @@
                 .order('created_at', { ascending: false });
             
             if (error) {
-                console.error('Error:', error);
-                document.getElementById('clientTableBody').innerHTML = 
-                    '<tr><td colspan="6" class="p-8 text-center text-red-500">Error loading data. Did you run the SQL setup?</td></tr>';
+                console.error(error);
                 return;
             }
             
             if (!clients || clients.length === 0) {
                 allClients = [];
-                renderClientTable();
+                renderTable();
                 updateStats();
                 return;
             }
@@ -320,7 +307,7 @@
                     .order('created_at', { ascending: false });
                 
                 const visitCount = services?.length || 0;
-                const totalSpent = services?.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0) || 0;
+                const totalSpent = services?.reduce((sum, s) => sum + parseFloat(s.amount || 0), 0) || 0;
                 
                 return {
                     ...client,
@@ -333,7 +320,7 @@
             }));
             
             allClients = enriched;
-            renderClientTable();
+            renderTable();
             updateStats();
         }
 
@@ -344,10 +331,7 @@
                 (clients || []).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         }
 
-        // =============================================
-        // UI RENDERING
-        // =============================================
-        function renderClientTable(filter = '') {
+        function renderTable(filter = '') {
             const tbody = document.getElementById('clientTableBody');
             
             if (!allClients.length) {
@@ -378,16 +362,16 @@
                     </td>
                     <td class="p-4">
                         ${c.discountEligible 
-                            ? '<span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">🌟 VIP Discount</span>' 
+                            ? '<span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">🌟 VIP</span>' 
                             : c.visitCount === 2
-                                ? '<span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-medium">⭐ Next = 20% off</span>'
+                                ? '<span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-medium">⭐ Next: 20% off</span>'
                                 : `<span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">${3 - c.visitCount} to discount</span>`
                         }
                     </td>
                     <td class="p-4 font-medium text-purple-700">M${c.totalSpent.toFixed(2)}</td>
                     <td class="p-4 text-sm text-gray-600 truncate max-w-[200px]">${c.lastService}</td>
                     <td class="p-4">
-                        <button onclick="viewClientHistory('${c.id}')" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">View →</button>
+                        <button onclick="window.viewHistory('${c.id}')" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">View →</button>
                     </td>
                 </tr>
             `).join('');
@@ -416,9 +400,7 @@
             }
         }
 
-        // =============================================
-        // FORM HANDLERS
-        // =============================================
+        // INIT
         document.addEventListener('DOMContentLoaded', () => {
             loadAllData();
             
@@ -431,10 +413,9 @@
                 if (!name) { alert('Name required'); return; }
                 
                 const { error } = await supabase.from('clients').insert([{ name, phone: phone || null, email: email || null }]);
-                
                 if (error) { alert('Error: ' + error.message); return; }
                 
-                closeModal('newClientModal');
+                window.closeModal('newClientModal');
                 document.getElementById('newClientForm').reset();
                 loadAllData();
                 alert('✅ Client registered!');
@@ -463,14 +444,14 @@
                 
                 if (error) { alert('Error: ' + error.message); return; }
                 
-                closeModal('logServiceModal');
+                window.closeModal('logServiceModal');
                 document.getElementById('logServiceForm').reset();
                 document.getElementById('discountNotice').classList.add('hidden');
                 loadAllData();
                 
                 const newVisits = (client?.visitCount || 0) + 1;
-                if (newVisits === 3) alert(`🎉 MILESTONE! ${client?.name} is now VIP with 20% off!`);
-                else if (isDiscounted) alert('✅ Service logged with 20% discount!');
+                if (newVisits === 3) alert(`🎉 MILESTONE! ${client?.name} is now VIP!`);
+                else if (isDiscounted) alert('✅ 20% discount applied!');
                 else alert('✅ Service logged!');
             });
             
