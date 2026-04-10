@@ -8,18 +8,27 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Global state
 let allClients = [];
-let currentSelectedClient = null;
 
 // =============================================
-// INITIALIZATION
+// INITIALIZATION - WAIT FOR DOM TO BE READY
 // =============================================
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded - initializing app');
+    
+    // Load initial data
     loadAllData();
     loadClientDropdown();
     
-    // Form handlers
-    document.getElementById('newClientForm').addEventListener('submit', handleNewClient);
-    document.getElementById('logServiceForm').addEventListener('submit', handleLogService);
+    // Attach form handlers
+    const newClientForm = document.getElementById('newClientForm');
+    if (newClientForm) {
+        newClientForm.addEventListener('submit', handleNewClient);
+    }
+    
+    const logServiceForm = document.getElementById('logServiceForm');
+    if (logServiceForm) {
+        logServiceForm.addEventListener('submit', handleLogService);
+    }
     
     // Service selection auto-fills amount
     document.querySelectorAll('input[name="service"]').forEach(radio => {
@@ -29,14 +38,142 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // Client selection in service modal checks discount
-    document.getElementById('serviceClientSelect').addEventListener('change', checkDiscountEligibility);
+    const clientSelect = document.getElementById('serviceClientSelect');
+    if (clientSelect) {
+        clientSelect.addEventListener('change', checkDiscountEligibility);
+    }
+    
+    // Attach modal close on outside click
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+            }
+        });
+    });
+    
+    // Escape key closes modals
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal.active').forEach(modal => {
+                modal.classList.remove('active');
+            });
+        }
+    });
+    
+    console.log('App initialized');
 });
+
+// =============================================
+// GLOBAL FUNCTIONS (CALLED FROM HTML ONCLICK)
+// =============================================
+function openNewClientModal() {
+    console.log('Opening new client modal');
+    const modal = document.getElementById('newClientModal');
+    if (modal) modal.classList.add('active');
+}
+
+function openLogServiceModal() {
+    console.log('Opening log service modal');
+    const modal = document.getElementById('logServiceModal');
+    if (modal) modal.classList.add('active');
+    loadClientDropdown();
+}
+
+function closeModal(modalId) {
+    console.log('Closing modal:', modalId);
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.remove('active');
+}
+
+function switchServiceTab(tab) {
+    console.log('Switching tab:', tab);
+    
+    // Remove active class from all tabs and contents
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    // Activate selected tab
+    const buttons = document.querySelectorAll('.tab-btn');
+    if (tab === 'technical' && buttons[0]) {
+        buttons[0].classList.add('active');
+        document.getElementById('technicalTab')?.classList.add('active');
+    } else if (buttons[1]) {
+        buttons[1].classList.add('active');
+        document.getElementById('professionalTab')?.classList.add('active');
+    }
+}
+
+function filterClients() {
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        renderClientTable(searchInput.value);
+    }
+}
+
+function viewClientHistory(clientId) {
+    console.log('Viewing history for client:', clientId);
+    const client = allClients.find(c => c.id === clientId);
+    if (!client) return;
+    
+    const detailName = document.getElementById('detailClientName');
+    if (detailName) {
+        detailName.textContent = `${escapeHtml(client.name)} — Service History`;
+    }
+    
+    const services = client.services || [];
+    const historyContent = document.getElementById('clientHistoryContent');
+    
+    if (!historyContent) return;
+    
+    if (services.length === 0) {
+        historyContent.innerHTML = `<p class="text-gray-500 text-center py-8">No services logged yet.</p>`;
+    } else {
+        historyContent.innerHTML = `
+            <div class="space-y-3">
+                ${services.map((s) => `
+                    <div class="border rounded-lg p-4 ${s.discounted ? 'bg-green-50 border-green-200' : 'bg-gray-50'}">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="font-medium">${escapeHtml(s.service_name)}</div>
+                                <div class="text-sm text-gray-500">${new Date(s.created_at).toLocaleDateString('en-GB')}</div>
+                                ${s.notes ? `<div class="text-sm text-gray-400 mt-1">📝 ${escapeHtml(s.notes)}</div>` : ''}
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold ${s.discounted ? 'text-green-700' : 'text-gray-900'}">
+                                    M${parseFloat(s.amount).toFixed(2)}
+                                </div>
+                                ${s.discounted ? '<span class="text-xs text-green-600">20% off applied</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="mt-4 pt-4 border-t flex justify-between">
+                <span class="font-medium">Total Spent:</span>
+                <span class="font-bold text-lg">M${client.totalSpent.toFixed(2)}</span>
+            </div>
+        `;
+    }
+    
+    const modal = document.getElementById('clientDetailModal');
+    if (modal) modal.classList.add('active');
+}
+
+// Expose functions to global window object
+window.openNewClientModal = openNewClientModal;
+window.openLogServiceModal = openLogServiceModal;
+window.closeModal = closeModal;
+window.switchServiceTab = switchServiceTab;
+window.filterClients = filterClients;
+window.viewClientHistory = viewClientHistory;
 
 // =============================================
 // DATA LOADING
 // =============================================
 async function loadAllData() {
-    // Load clients
+    console.log('Loading all data...');
+    
     const { data: clients, error } = await supabase
         .from('clients')
         .select('*')
@@ -44,8 +181,10 @@ async function loadAllData() {
     
     if (error) {
         console.error('Error loading clients:', error);
-        document.getElementById('clientTableBody').innerHTML = 
-            `<tr><td colspan="6" class="p-8 text-center text-red-500">Error: ${error.message}</td></tr>`;
+        const tbody = document.getElementById('clientTableBody');
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-red-500">Error: ${error.message}</td></tr>`;
+        }
         return;
     }
     
@@ -53,6 +192,7 @@ async function loadAllData() {
         allClients = [];
         renderClientTable();
         updateStats();
+        console.log('No clients found');
         return;
     }
     
@@ -80,10 +220,9 @@ async function loadAllData() {
     }));
     
     allClients = enrichedClients;
-    
-    // Update UI
     renderClientTable();
     updateStats();
+    console.log('Data loaded:', allClients.length, 'clients');
 }
 
 async function loadClientDropdown() {
@@ -98,8 +237,10 @@ async function loadClientDropdown() {
     }
     
     const select = document.getElementById('serviceClientSelect');
-    select.innerHTML = '<option value="">-- Choose Client --</option>' +
-        (clients || []).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    if (select) {
+        select.innerHTML = '<option value="">-- Choose Client --</option>' +
+            (clients || []).map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+    }
 }
 
 // =============================================
@@ -107,10 +248,15 @@ async function loadClientDropdown() {
 // =============================================
 async function handleNewClient(e) {
     e.preventDefault();
+    console.log('Handling new client...');
     
-    const name = document.getElementById('clientName').value.trim();
-    const phone = document.getElementById('clientPhone').value.trim();
-    const email = document.getElementById('clientEmail').value.trim();
+    const nameInput = document.getElementById('clientName');
+    const phoneInput = document.getElementById('clientPhone');
+    const emailInput = document.getElementById('clientEmail');
+    
+    const name = nameInput?.value.trim();
+    const phone = phoneInput?.value.trim();
+    const email = emailInput?.value.trim();
     
     if (!name) {
         alert('Client name is required');
@@ -133,24 +279,31 @@ async function handleNewClient(e) {
     }
     
     closeModal('newClientModal');
-    document.getElementById('newClientForm').reset();
+    if (nameInput) nameInput.value = '';
+    if (phoneInput) phoneInput.value = '';
+    if (emailInput) emailInput.value = '';
+    
     await loadAllData();
     await loadClientDropdown();
     
-    // Auto-open log service for this new client
     if (data && data[0]) {
         setTimeout(() => {
             openLogServiceModal();
-            document.getElementById('serviceClientSelect').value = data[0].id;
+            const select = document.getElementById('serviceClientSelect');
+            if (select) select.value = data[0].id;
         }, 200);
     }
 }
 
 async function handleLogService(e) {
     e.preventDefault();
+    console.log('Handling log service...');
     
-    const clientId = document.getElementById('serviceClientSelect').value;
+    const clientSelect = document.getElementById('serviceClientSelect');
+    const clientId = clientSelect?.value;
     const serviceRadio = document.querySelector('input[name="service"]:checked');
+    const amountInput = document.getElementById('serviceAmount');
+    const notesInput = document.getElementById('serviceNotes');
     
     if (!clientId) {
         alert('Please select a client');
@@ -163,16 +316,15 @@ async function handleLogService(e) {
     }
     
     const serviceName = serviceRadio.value;
-    let amount = parseFloat(document.getElementById('serviceAmount').value) || parseFloat(serviceRadio.dataset.price) || 0;
-    const notes = document.getElementById('serviceNotes').value;
+    let amount = parseFloat(amountInput?.value) || parseFloat(serviceRadio.dataset.price) || 0;
+    const notes = notesInput?.value;
     
-    // Check if discount applies (3rd+ visit = 2 or more previous visits)
     const client = allClients.find(c => c.id === clientId);
     const previousVisits = client?.visitCount || 0;
-    const isDiscounted = previousVisits >= 2; // This will be their 3rd+ visit
+    const isDiscounted = previousVisits >= 2;
     
     if (isDiscounted) {
-        amount = amount * 0.8; // 20% off
+        amount = amount * 0.8;
     }
     
     const { error } = await supabase
@@ -191,19 +343,22 @@ async function handleLogService(e) {
         return;
     }
     
-    // Check if this was their 3rd visit (milestone)
     const newVisitCount = previousVisits + 1;
     
     closeModal('logServiceModal');
-    document.getElementById('logServiceForm').reset();
-    document.getElementById('discountNotice').classList.add('hidden');
+    
+    // Reset form
+    if (clientSelect) clientSelect.value = '';
+    document.querySelectorAll('input[name="service"]').forEach(r => r.checked = false);
+    if (amountInput) amountInput.value = '';
+    if (notesInput) notesInput.value = '';
+    document.getElementById('discountNotice')?.classList.add('hidden');
     
     await loadAllData();
     await loadClientDropdown();
     
     if (newVisitCount === 3) {
-        const clientName = client?.name || 'Client';
-        alert(`🎉 MILESTONE! ${clientName} just completed their 3rd visit and received 20% off!\n\nThey are now a VIP loyalty member.`);
+        alert(`🎉 MILESTONE! ${client?.name || 'Client'} just completed their 3rd visit and received 20% off!\n\nThey are now a VIP loyalty member.`);
     } else if (isDiscounted) {
         alert(`✅ Service logged with 20% loyalty discount applied.`);
     } else {
@@ -216,19 +371,23 @@ async function handleLogService(e) {
 // =============================================
 function renderClientTable(filterText = '') {
     const tbody = document.getElementById('clientTableBody');
+    const totalClientsSpan = document.getElementById('totalClients');
+    
+    if (!tbody) return;
     
     if (!allClients || allClients.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-400">
             No clients yet. Click "New Client" to get started.
         </td></tr>`;
-        document.getElementById('totalClients').textContent = '0';
+        if (totalClientsSpan) totalClientsSpan.textContent = '0';
         return;
     }
     
+    const searchTerm = filterText.toLowerCase();
     const filteredClients = allClients.filter(c => 
-        c.name.toLowerCase().includes(filterText.toLowerCase()) ||
+        c.name.toLowerCase().includes(searchTerm) ||
         (c.phone && c.phone.includes(filterText)) ||
-        (c.email && c.email.toLowerCase().includes(filterText.toLowerCase()))
+        (c.email && c.email.toLowerCase().includes(searchTerm))
     );
     
     if (filteredClients.length === 0) {
@@ -258,14 +417,14 @@ function renderClientTable(filterText = '') {
             <td class="p-4 font-medium text-purple-700">M${client.totalSpent.toFixed(2)}</td>
             <td class="p-4 text-sm text-gray-600 max-w-[200px] truncate">${escapeHtml(client.lastService)}</td>
             <td class="p-4">
-                <button onclick='viewClientHistory("${client.id}")' class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                <button onclick="viewClientHistory('${client.id}')" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
                     View History →
                 </button>
             </td>
         </tr>
     `).join('');
     
-    document.getElementById('totalClients').textContent = allClients.length;
+    if (totalClientsSpan) totalClientsSpan.textContent = allClients.length;
 }
 
 function updateStats() {
@@ -273,129 +432,33 @@ function updateStats() {
     const discountEligible = allClients.filter(c => c.discountEligible).length;
     const totalRevenue = allClients.reduce((sum, c) => sum + c.totalSpent, 0);
     
-    document.getElementById('totalServices').textContent = totalServices;
-    document.getElementById('discountEligible').textContent = discountEligible;
-    document.getElementById('totalRevenue').textContent = `M${totalRevenue.toFixed(2)}`;
+    const totalServicesEl = document.getElementById('totalServices');
+    const discountEligibleEl = document.getElementById('discountEligible');
+    const totalRevenueEl = document.getElementById('totalRevenue');
+    
+    if (totalServicesEl) totalServicesEl.textContent = totalServices;
+    if (discountEligibleEl) discountEligibleEl.textContent = discountEligible;
+    if (totalRevenueEl) totalRevenueEl.textContent = `M${totalRevenue.toFixed(2)}`;
 }
 
-async function viewClientHistory(clientId) {
+function checkDiscountEligibility() {
+    const clientSelect = document.getElementById('serviceClientSelect');
+    const clientId = clientSelect?.value;
     const client = allClients.find(c => c.id === clientId);
-    if (!client) return;
+    const discountNotice = document.getElementById('discountNotice');
     
-    document.getElementById('detailClientName').textContent = `${escapeHtml(client.name)} — Service History`;
-    
-    const services = client.services || [];
-    
-    if (services.length === 0) {
-        document.getElementById('clientHistoryContent').innerHTML = `
-            <p class="text-gray-500 text-center py-8">No services logged yet.</p>
-        `;
-    } else {
-        document.getElementById('clientHistoryContent').innerHTML = `
-            <div class="space-y-3">
-                ${services.map((s, idx) => `
-                    <div class="border rounded-lg p-4 ${s.discounted ? 'bg-green-50 border-green-200' : 'bg-gray-50'}">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <div class="font-medium">${escapeHtml(s.service_name)}</div>
-                                <div class="text-sm text-gray-500">${new Date(s.created_at).toLocaleDateString('en-GB')}</div>
-                                ${s.notes ? `<div class="text-sm text-gray-400 mt-1">📝 ${escapeHtml(s.notes)}</div>` : ''}
-                            </div>
-                            <div class="text-right">
-                                <div class="font-bold ${s.discounted ? 'text-green-700' : 'text-gray-900'}">
-                                    M${parseFloat(s.amount).toFixed(2)}
-                                </div>
-                                ${s.discounted ? '<span class="text-xs text-green-600">20% off applied</span>' : ''}
-                            </div>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-            <div class="mt-4 pt-4 border-t flex justify-between">
-                <span class="font-medium">Total Spent:</span>
-                <span class="font-bold text-lg">M${client.totalSpent.toFixed(2)}</span>
-            </div>
-        `;
+    if (discountNotice) {
+        if (client && client.visitCount >= 2) {
+            discountNotice.classList.remove('hidden');
+        } else {
+            discountNotice.classList.add('hidden');
+        }
     }
-    
-    document.getElementById('clientDetailModal').classList.add('active');
 }
 
-// =============================================
-// HELPER FUNCTIONS
-// =============================================
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
-
-function checkDiscountEligibility() {
-    const clientId = document.getElementById('serviceClientSelect').value;
-    const client = allClients.find(c => c.id === clientId);
-    
-    if (client && client.visitCount >= 2) {
-        document.getElementById('discountNotice').classList.remove('hidden');
-    } else {
-        document.getElementById('discountNotice').classList.add('hidden');
-    }
-}
-
-function switchServiceTab(tab) {
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    
-    if (tab === 'technical') {
-        document.querySelectorAll('.tab-btn')[0].classList.add('active');
-        document.getElementById('technicalTab').classList.add('active');
-    } else {
-        document.querySelectorAll('.tab-btn')[1].classList.add('active');
-        document.getElementById('professionalTab').classList.add('active');
-    }
-}
-
-function filterClients() {
-    const searchTerm = document.getElementById('searchInput').value;
-    renderClientTable(searchTerm);
-}
-
-// Modal controls
-function openNewClientModal() {
-    document.getElementById('newClientModal').classList.add('active');
-}
-
-function openLogServiceModal() {
-    document.getElementById('logServiceModal').classList.add('active');
-    loadClientDropdown();
-}
-
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove('active');
-}
-
-// Global function exports for onclick handlers
-window.openNewClientModal = openNewClientModal;
-window.openLogServiceModal = openLogServiceModal;
-window.closeModal = closeModal;
-window.switchServiceTab = switchServiceTab;
-window.filterClients = filterClients;
-window.viewClientHistory = viewClientHistory;
-
-// Close modals on outside click
-document.querySelectorAll('.modal').forEach(modal => {
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.classList.remove('active');
-        }
-    });
-});
-
-// Close modal on Escape key
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        document.querySelectorAll('.modal.active').forEach(modal => {
-            modal.classList.remove('active');
-        });
-    }
-});
