@@ -33,10 +33,10 @@
     <main class="max-w-7xl mx-auto p-6">
         
         <div class="flex gap-3 mb-6">
-            <button onclick="window.openNewClientModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition flex items-center gap-2">
+            <button id="btnNewClient" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition">
                 <span class="text-xl">+</span> New Client
             </button>
-            <button onclick="window.openLogServiceModal()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition flex items-center gap-2">
+            <button id="btnLogService" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition">
                 <span class="text-xl">📋</span> Log Service
             </button>
         </div>
@@ -59,7 +59,7 @@
         <div class="bg-white rounded-xl shadow-md border overflow-hidden">
             <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
                 <h2 class="font-semibold text-gray-800 text-lg">📋 Client Directory</h2>
-                <input type="text" id="searchInput" placeholder="Search clients..." class="px-4 py-2 border rounded-lg text-sm w-64 focus:ring-2 focus:ring-indigo-300 outline-none" onkeyup="window.filterClients()">
+                <input type="text" id="searchInput" placeholder="Search clients..." class="px-4 py-2 border rounded-lg text-sm w-64 focus:ring-2 focus:ring-indigo-300 outline-none">
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
@@ -81,7 +81,7 @@
         </div>
     </main>
 
-    <!-- New Client Modal -->
+    <!-- Modals -->
     <div id="newClientModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
             <div class="p-6">
@@ -92,14 +92,13 @@
                     <input type="email" id="clientEmail" placeholder="Email (optional)" class="w-full p-3 border rounded-lg mb-4">
                     <div class="flex gap-3">
                         <button type="submit" class="bg-indigo-600 text-white px-4 py-3 rounded-lg flex-1">Register</button>
-                        <button type="button" onclick="window.closeModal('newClientModal')" class="bg-gray-200 px-4 py-3 rounded-lg flex-1">Cancel</button>
+                        <button type="button" id="cancelNewClient" class="bg-gray-200 px-4 py-3 rounded-lg flex-1">Cancel</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Log Service Modal -->
     <div id="logServiceModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             <div class="p-6">
@@ -112,8 +111,8 @@
 
                     <label class="block text-sm font-medium text-gray-700 mb-2">Select Service</label>
                     <div class="flex gap-2 mb-3 border-b">
-                        <button type="button" class="tab-btn active px-4 py-2 rounded-t-lg text-sm" onclick="window.switchTab('technical')">💻 Technical</button>
-                        <button type="button" class="tab-btn px-4 py-2 rounded-t-lg text-sm" onclick="window.switchTab('professional')">📄 Professional</button>
+                        <button type="button" id="tabTechnical" class="tab-btn active px-4 py-2 rounded-t-lg text-sm">💻 Technical</button>
+                        <button type="button" id="tabProfessional" class="tab-btn px-4 py-2 rounded-t-lg text-sm">📄 Professional</button>
                     </div>
 
                     <div id="technicalTab" class="tab-content active space-y-2 mb-4">
@@ -179,20 +178,19 @@
 
                     <div class="flex gap-3">
                         <button type="submit" class="bg-green-600 text-white px-4 py-3 rounded-lg flex-1">Log Service</button>
-                        <button type="button" onclick="window.closeModal('logServiceModal')" class="bg-gray-200 px-4 py-3 rounded-lg flex-1">Cancel</button>
+                        <button type="button" id="cancelLogService" class="bg-gray-200 px-4 py-3 rounded-lg flex-1">Cancel</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Client Detail Modal -->
     <div id="clientDetailModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[80vh] overflow-y-auto">
             <div class="p-6">
                 <div class="flex justify-between items-start mb-4">
                     <h3 class="text-xl font-bold" id="detailClientName">Client History</h3>
-                    <button onclick="window.closeModal('clientDetailModal')" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                    <button id="closeDetailModal" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                 </div>
                 <div id="clientHistoryContent">
                     <p class="text-gray-500">Loading...</p>
@@ -202,274 +200,151 @@
     </div>
 
     <script>
-        // ONE SINGLE SCRIPT - NO DUPLICATES
-        
-        const SUPABASE_URL = 'https://kqzauqxyvqgncebyulds.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxemF1cXh5dnFnbmNlYnl1bGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MzM0NDUsImV4cCI6MjA5MTQwOTQ0NX0.SyGcJfsOYdkeo0K6szjU8OIv4Hb1g2CXzfD57Vo_PjU';
-        
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        let allClients = [];
-
-        // GLOBAL FUNCTIONS
-        window.openNewClientModal = function() {
-            document.getElementById('newClientModal').classList.add('active');
-        };
-
-        window.openLogServiceModal = function() {
-            document.getElementById('logServiceModal').classList.add('active');
-            loadClientDropdown();
-        };
-
-        window.closeModal = function(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        };
-
-        window.switchTab = function(tab) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            if (tab === 'technical') {
-                document.querySelectorAll('.tab-btn')[0].classList.add('active');
-                document.getElementById('technicalTab').classList.add('active');
-            } else {
-                document.querySelectorAll('.tab-btn')[1].classList.add('active');
-                document.getElementById('professionalTab').classList.add('active');
-            }
-        };
-
-        window.filterClients = function() {
-            const search = document.getElementById('searchInput').value;
-            renderTable(search);
-        };
-
-        window.viewHistory = async function(clientId) {
-            const client = allClients.find(c => c.id === clientId);
-            if (!client) return;
+        // WAIT FOR EVERYTHING TO LOAD
+        window.addEventListener('load', function() {
             
-            document.getElementById('detailClientName').textContent = client.name + ' — Service History';
-            const content = document.getElementById('clientHistoryContent');
-            const services = client.services || [];
+            const SUPABASE_URL = 'https://kqzauqxyvqgncebyulds.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxemF1cXh5dnFnbmNlYnl1bGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MzM0NDUsImV4cCI6MjA5MTQwOTQ0NX0.SyGcJfsOYdkeo0K6szjU8OIv4Hb1g2CXzfD57Vo_PjU';
             
-            if (services.length === 0) {
-                content.innerHTML = '<p class="text-gray-500 text-center py-8">No services yet.</p>';
-            } else {
-                content.innerHTML = `
-                    <div class="space-y-3">
-                        ${services.map(s => `
-                            <div class="border rounded-lg p-4 ${s.discounted ? 'bg-green-50 border-green-200' : 'bg-gray-50'}">
-                                <div class="flex justify-between">
-                                    <div>
-                                        <div class="font-medium">${s.service_name}</div>
-                                        <div class="text-sm text-gray-500">${new Date(s.created_at).toLocaleDateString()}</div>
-                                        ${s.notes ? `<div class="text-sm text-gray-400">📝 ${s.notes}</div>` : ''}
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="font-bold">M${parseFloat(s.amount).toFixed(2)}</div>
-                                        ${s.discounted ? '<span class="text-xs text-green-600">20% off</span>' : ''}
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div class="mt-4 pt-4 border-t flex justify-between">
-                        <span class="font-medium">Total Spent:</span>
-                        <span class="font-bold text-lg">M${client.totalSpent.toFixed(2)}</span>
-                    </div>
-                `;
-            }
-            
-            document.getElementById('clientDetailModal').classList.add('active');
-        };
+            const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            let allClients = [];
 
-        // DATA LOADING
-        async function loadAllData() {
-            const { data: clients, error } = await supabase
-                .from('clients')
-                .select('*')
-                .order('created_at', { ascending: false });
-            
-            if (error) {
-                console.error(error);
-                return;
-            }
-            
-            if (!clients || clients.length === 0) {
-                allClients = [];
+            // Helper functions
+            function openModal(id) { document.getElementById(id).classList.add('active'); }
+            function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+            async function loadAllData() {
+                const { data: clients, error } = await supabaseClient.from('clients').select('*').order('created_at', { ascending: false });
+                if (error) { console.error(error); return; }
+                if (!clients?.length) { allClients = []; renderTable(); updateStats(); return; }
+                
+                const enriched = await Promise.all(clients.map(async (c) => {
+                    const { data: svc } = await supabaseClient.from('services').select('*').eq('client_id', c.id).order('created_at', { ascending: false });
+                    const count = svc?.length || 0;
+                    const spent = svc?.reduce((s, x) => s + parseFloat(x.amount || 0), 0) || 0;
+                    return { ...c, visitCount: count, totalSpent: spent, lastService: svc?.[0]?.service_name || '—', discountEligible: count >= 3, services: svc || [] };
+                }));
+                allClients = enriched;
                 renderTable();
                 updateStats();
-                return;
             }
-            
-            const enriched = await Promise.all(clients.map(async (client) => {
-                const { data: services } = await supabase
-                    .from('services')
-                    .select('*')
-                    .eq('client_id', client.id)
-                    .order('created_at', { ascending: false });
-                
-                const visitCount = services?.length || 0;
-                const totalSpent = services?.reduce((sum, s) => sum + parseFloat(s.amount || 0), 0) || 0;
-                
-                return {
-                    ...client,
-                    visitCount,
-                    totalSpent,
-                    lastService: services?.[0]?.service_name || '—',
-                    discountEligible: visitCount >= 3,
-                    services: services || []
-                };
-            }));
-            
-            allClients = enriched;
-            renderTable();
-            updateStats();
-        }
 
-        async function loadClientDropdown() {
-            const { data: clients } = await supabase.from('clients').select('id, name').order('name');
-            const select = document.getElementById('serviceClientSelect');
-            select.innerHTML = '<option value="">-- Choose Client --</option>' +
-                (clients || []).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-        }
-
-        function renderTable(filter = '') {
-            const tbody = document.getElementById('clientTableBody');
-            
-            if (!allClients.length) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">No clients yet. Click "New Client" to start.</td></tr>';
-                document.getElementById('totalClients').textContent = '0';
-                return;
+            async function loadDropdown() {
+                const { data } = await supabaseClient.from('clients').select('id, name').order('name');
+                const select = document.getElementById('serviceClientSelect');
+                select.innerHTML = '<option value="">-- Choose Client --</option>' + (data || []).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
             }
-            
-            const filtered = allClients.filter(c => 
-                c.name.toLowerCase().includes(filter.toLowerCase()) ||
-                (c.phone && c.phone.includes(filter)) ||
-                (c.email && c.email.toLowerCase().includes(filter.toLowerCase()))
-            );
-            
-            if (!filtered.length) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">No matches</td></tr>';
-                return;
+
+            function renderTable(filter = '') {
+                const tbody = document.getElementById('clientTableBody');
+                if (!allClients.length) { tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center">No clients</td></tr>'; return; }
+                const filtered = allClients.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()));
+                tbody.innerHTML = filtered.map(c => `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-4"><div class="font-medium">${c.name}</div><div class="text-sm text-gray-500">${c.phone || ''}</div></td>
+                        <td class="p-4"><span class="font-mono text-lg font-bold ${c.visitCount>=3?'text-green-600':''}">${c.visitCount}</span></td>
+                        <td class="p-4">${c.discountEligible?'<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">VIP</span>':c.visitCount===2?'<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">Next:20% off</span>':`<span class="bg-gray-100 px-2 py-1 rounded text-xs">${3-c.visitCount} to discount</span>`}</td>
+                        <td class="p-4 font-medium text-purple-700">M${c.totalSpent.toFixed(2)}</td>
+                        <td class="p-4 text-sm truncate max-w-[200px]">${c.lastService}</td>
+                        <td class="p-4"><button data-id="${c.id}" class="viewHistory text-indigo-600 text-sm">View →</button></td>
+                    </tr>
+                `).join('');
+                document.getElementById('totalClients').textContent = allClients.length;
+                document.querySelectorAll('.viewHistory').forEach(b => b.addEventListener('click', () => viewHistory(b.dataset.id)));
             }
-            
-            tbody.innerHTML = filtered.map(c => `
-                <tr class="border-b hover:bg-gray-50">
-                    <td class="p-4">
-                        <div class="font-medium">${c.name}</div>
-                        <div class="text-sm text-gray-500">${c.phone || 'No phone'} ${c.email ? '· ' + c.email : ''}</div>
-                    </td>
-                    <td class="p-4">
-                        <span class="font-mono text-lg font-bold ${c.visitCount >= 3 ? 'text-green-600' : 'text-gray-700'}">${c.visitCount}</span>
-                    </td>
-                    <td class="p-4">
-                        ${c.discountEligible 
-                            ? '<span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">🌟 VIP</span>' 
-                            : c.visitCount === 2
-                                ? '<span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-medium">⭐ Next: 20% off</span>'
-                                : `<span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">${3 - c.visitCount} to discount</span>`
-                        }
-                    </td>
-                    <td class="p-4 font-medium text-purple-700">M${c.totalSpent.toFixed(2)}</td>
-                    <td class="p-4 text-sm text-gray-600 truncate max-w-[200px]">${c.lastService}</td>
-                    <td class="p-4">
-                        <button onclick="window.viewHistory('${c.id}')" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">View →</button>
-                    </td>
-                </tr>
-            `).join('');
-            
-            document.getElementById('totalClients').textContent = allClients.length;
-        }
 
-        function updateStats() {
-            const totalServices = allClients.reduce((s, c) => s + c.visitCount, 0);
-            const eligible = allClients.filter(c => c.discountEligible).length;
-            const revenue = allClients.reduce((s, c) => s + c.totalSpent, 0);
-            
-            document.getElementById('totalServices').textContent = totalServices;
-            document.getElementById('discountEligible').textContent = eligible;
-            document.getElementById('totalRevenue').textContent = `M${revenue.toFixed(2)}`;
-        }
-
-        function checkDiscount() {
-            const clientId = document.getElementById('serviceClientSelect').value;
-            const client = allClients.find(c => c.id === clientId);
-            const notice = document.getElementById('discountNotice');
-            if (client && client.visitCount >= 2) {
-                notice.classList.remove('hidden');
-            } else {
-                notice.classList.add('hidden');
+            function updateStats() {
+                document.getElementById('totalServices').textContent = allClients.reduce((s,c)=>s+c.visitCount,0);
+                document.getElementById('discountEligible').textContent = allClients.filter(c=>c.discountEligible).length;
+                document.getElementById('totalRevenue').textContent = `M${allClients.reduce((s,c)=>s+c.totalSpent,0).toFixed(2)}`;
             }
-        }
 
-        // INIT
-        document.addEventListener('DOMContentLoaded', () => {
+            function viewHistory(id) {
+                const c = allClients.find(x => x.id === id);
+                if (!c) return;
+                document.getElementById('detailClientName').textContent = c.name + ' — History';
+                const content = document.getElementById('clientHistoryContent');
+                content.innerHTML = c.services.length ? c.services.map(s => `
+                    <div class="border rounded p-4 ${s.discounted?'bg-green-50':''} mb-2">
+                        <div class="flex justify-between"><span class="font-medium">${s.service_name}</span><span class="font-bold">M${parseFloat(s.amount).toFixed(2)}</span></div>
+                        <div class="text-sm text-gray-500">${new Date(s.created_at).toLocaleDateString()}</div>
+                    </div>
+                `).join('') + `<div class="mt-4 pt-4 border-t font-bold text-right">Total: M${c.totalSpent.toFixed(2)}</div>` : '<p class="text-center py-8 text-gray-500">No services</p>';
+                openModal('clientDetailModal');
+            }
+
+            // Set up all event listeners
             loadAllData();
+            
+            document.getElementById('btnNewClient').addEventListener('click', () => openModal('newClientModal'));
+            document.getElementById('btnLogService').addEventListener('click', () => { loadDropdown(); openModal('logServiceModal'); });
+            document.getElementById('cancelNewClient').addEventListener('click', () => closeModal('newClientModal'));
+            document.getElementById('cancelLogService').addEventListener('click', () => closeModal('logServiceModal'));
+            document.getElementById('closeDetailModal').addEventListener('click', () => closeModal('clientDetailModal'));
+            
+            document.getElementById('searchInput').addEventListener('keyup', (e) => renderTable(e.target.value));
+            
+            document.getElementById('tabTechnical').addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById('tabTechnical').classList.add('active');
+                document.getElementById('technicalTab').classList.add('active');
+            });
+            
+            document.getElementById('tabProfessional').addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById('tabProfessional').classList.add('active');
+                document.getElementById('professionalTab').classList.add('active');
+            });
+            
+            document.querySelectorAll('input[name="service"]').forEach(r => {
+                r.addEventListener('change', (e) => document.getElementById('serviceAmount').value = e.target.dataset.price);
+            });
+            
+            document.getElementById('serviceClientSelect').addEventListener('change', () => {
+                const c = allClients.find(x => x.id === document.getElementById('serviceClientSelect').value);
+                document.getElementById('discountNotice').classList.toggle('hidden', !c || c.visitCount < 2);
+            });
             
             document.getElementById('newClientForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const name = document.getElementById('clientName').value.trim();
-                const phone = document.getElementById('clientPhone').value.trim();
-                const email = document.getElementById('clientEmail').value.trim();
-                
-                if (!name) { alert('Name required'); return; }
-                
-                const { error } = await supabase.from('clients').insert([{ name, phone: phone || null, email: email || null }]);
-                if (error) { alert('Error: ' + error.message); return; }
-                
-                window.closeModal('newClientModal');
+                if (!name) return alert('Name required');
+                await supabaseClient.from('clients').insert([{ name, phone: document.getElementById('clientPhone').value.trim() || null, email: document.getElementById('clientEmail').value.trim() || null }]);
+                closeModal('newClientModal');
                 document.getElementById('newClientForm').reset();
                 loadAllData();
-                alert('✅ Client registered!');
+                alert('✅ Client added!');
             });
             
             document.getElementById('logServiceForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const clientId = document.getElementById('serviceClientSelect').value;
                 const service = document.querySelector('input[name="service"]:checked');
-                
-                if (!clientId) { alert('Select a client'); return; }
-                if (!service) { alert('Select a service'); return; }
+                if (!clientId) return alert('Select client');
+                if (!service) return alert('Select service');
                 
                 const client = allClients.find(c => c.id === clientId);
                 let amount = parseFloat(document.getElementById('serviceAmount').value) || parseFloat(service.dataset.price) || 0;
-                const isDiscounted = (client?.visitCount || 0) >= 2;
-                if (isDiscounted) amount = amount * 0.8;
+                const discounted = (client?.visitCount || 0) >= 2;
+                if (discounted) amount *= 0.8;
                 
-                const { error } = await supabase.from('services').insert([{
-                    client_id: clientId,
-                    service_name: service.value,
-                    amount: amount,
-                    discounted: isDiscounted,
-                    notes: document.getElementById('serviceNotes').value || null
-                }]);
-                
-                if (error) { alert('Error: ' + error.message); return; }
-                
-                window.closeModal('logServiceModal');
+                await supabaseClient.from('services').insert([{ client_id: clientId, service_name: service.value, amount, discounted, notes: document.getElementById('serviceNotes').value || null }]);
+                closeModal('logServiceModal');
                 document.getElementById('logServiceForm').reset();
                 document.getElementById('discountNotice').classList.add('hidden');
                 loadAllData();
                 
                 const newVisits = (client?.visitCount || 0) + 1;
-                if (newVisits === 3) alert(`🎉 MILESTONE! ${client?.name} is now VIP!`);
-                else if (isDiscounted) alert('✅ 20% discount applied!');
+                if (newVisits === 3) alert(`🎉 MILESTONE! ${client.name} is VIP!`);
+                else if (discounted) alert('✅ 20% discount applied!');
                 else alert('✅ Service logged!');
             });
             
-            document.getElementById('serviceClientSelect').addEventListener('change', checkDiscount);
+            document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('active'); }));
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active')); });
             
-            document.querySelectorAll('input[name="service"]').forEach(r => {
-                r.addEventListener('change', (e) => {
-                    document.getElementById('serviceAmount').value = e.target.dataset.price;
-                });
-            });
-            
-            document.querySelectorAll('.modal').forEach(m => {
-                m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('active'); });
-            });
-            
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
-            });
         });
     </script>
 </body>
