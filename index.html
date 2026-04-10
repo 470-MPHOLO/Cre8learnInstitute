@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cre8Learn Institute | Client Tracker</title>
+    <title>Cre8Learn Institute | Secure Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -13,75 +13,117 @@
         .tab-btn.active { background: #4f46e5; color: white; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+        #loginScreen { display: flex; }
+        #mainApp { display: none; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
     
-    <header class="bg-gradient-to-r from-indigo-900 to-purple-900 text-white p-6 shadow-lg">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <div>
-                <h1 class="text-3xl font-bold tracking-tight">🎓 Cre8Learn Institute</h1>
-                <p class="text-indigo-200 mt-1">Empowering learners through technology & professionalism</p>
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="fixed inset-0 bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+            <div class="text-center mb-6">
+                <h1 class="text-3xl font-bold text-indigo-900">🎓 Cre8Learn</h1>
+                <p class="text-gray-500 mt-2">Secure Institute Access</p>
             </div>
-            <div class="bg-white/10 px-4 py-2 rounded-lg text-right">
-                <div class="text-sm opacity-80">Total Clients</div>
-                <div id="totalClients" class="text-3xl font-bold">0</div>
-            </div>
-        </div>
-    </header>
-
-    <main class="max-w-7xl mx-auto p-6">
-        
-        <div class="flex gap-3 mb-6">
-            <button id="btnNewClient" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition">
-                <span class="text-xl">+</span> New Client
-            </button>
-            <button id="btnLogService" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition">
-                <span class="text-xl">📋</span> Log Service
-            </button>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="bg-white p-5 rounded-xl shadow-sm border">
-                <div class="text-gray-500 text-sm mb-1">🔁 Total Services</div>
-                <div id="totalServices" class="text-3xl font-bold text-indigo-700">0</div>
-            </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border">
-                <div class="text-gray-500 text-sm mb-1">🌟 Discount Eligible</div>
-                <div id="discountEligible" class="text-3xl font-bold text-green-600">0</div>
-            </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border">
-                <div class="text-gray-500 text-sm mb-1">💰 Total Revenue</div>
-                <div id="totalRevenue" class="text-3xl font-bold text-purple-700">M0</div>
+            
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input type="text" id="loginUsername" placeholder="Enter username" required class="w-full p-3 border rounded-lg">
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter password" required class="w-full p-3 border rounded-lg">
+                </div>
+                
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-lg transition">
+                    Login to Dashboard
+                </button>
+                
+                <div id="loginError" class="text-red-500 text-sm text-center mt-3 hidden"></div>
+            </form>
+            
+            <div class="text-center text-gray-400 text-xs mt-6">
+                🔒 Secure Access Only
             </div>
         </div>
+    </div>
 
-        <div class="bg-white rounded-xl shadow-md border overflow-hidden">
-            <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
-                <h2 class="font-semibold text-gray-800 text-lg">📋 Client Directory</h2>
-                <input type="text" id="searchInput" placeholder="Search clients..." class="px-4 py-2 border rounded-lg text-sm w-64 focus:ring-2 focus:ring-indigo-300 outline-none">
+    <!-- MAIN APP (Hidden until login) -->
+    <div id="mainApp">
+        <header class="bg-gradient-to-r from-indigo-900 to-purple-900 text-white p-6 shadow-lg">
+            <div class="max-w-7xl mx-auto flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold tracking-tight">🎓 Cre8Learn Institute</h1>
+                    <p class="text-indigo-200 mt-1">Empowering learners through technology & professionalism</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="bg-white/10 px-4 py-2 rounded-lg text-right">
+                        <div class="text-sm opacity-80">Total Clients</div>
+                        <div id="totalClients" class="text-3xl font-bold">0</div>
+                    </div>
+                    <button id="logoutBtn" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm transition">
+                        🚪 Logout
+                    </button>
+                </div>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead class="bg-gray-50 border-b text-sm">
-                        <tr>
-                            <th class="p-4 font-semibold text-gray-600">Client</th>
-                            <th class="p-4 font-semibold text-gray-600">Visits</th>
-                            <th class="p-4 font-semibold text-gray-600">Status</th>
-                            <th class="p-4 font-semibold text-gray-600">Total Spent</th>
-                            <th class="p-4 font-semibold text-gray-600">Last Service</th>
-                            <th class="p-4 font-semibold text-gray-600"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="clientTableBody">
-                        <tr><td colspan="6" class="p-8 text-center text-gray-400">Loading...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </main>
+        </header>
 
-    <!-- Modals -->
+        <main class="max-w-7xl mx-auto p-6">
+            
+            <div class="flex gap-3 mb-6">
+                <button id="btnNewClient" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition">
+                    <span class="text-xl">+</span> New Client
+                </button>
+                <button id="btnLogService" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition">
+                    <span class="text-xl">📋</span> Log Service
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-white p-5 rounded-xl shadow-sm border">
+                    <div class="text-gray-500 text-sm mb-1">🔁 Total Services</div>
+                    <div id="totalServices" class="text-3xl font-bold text-indigo-700">0</div>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border">
+                    <div class="text-gray-500 text-sm mb-1">🌟 Discount Eligible</div>
+                    <div id="discountEligible" class="text-3xl font-bold text-green-600">0</div>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border">
+                    <div class="text-gray-500 text-sm mb-1">💰 Total Revenue</div>
+                    <div id="totalRevenue" class="text-3xl font-bold text-purple-700">M0</div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md border overflow-hidden">
+                <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                    <h2 class="font-semibold text-gray-800 text-lg">📋 Client Directory</h2>
+                    <input type="text" id="searchInput" placeholder="Search clients..." class="px-4 py-2 border rounded-lg text-sm w-64 focus:ring-2 focus:ring-indigo-300 outline-none">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 border-b text-sm">
+                            <tr>
+                                <th class="p-4 font-semibold text-gray-600">Client</th>
+                                <th class="p-4 font-semibold text-gray-600">Visits</th>
+                                <th class="p-4 font-semibold text-gray-600">Status</th>
+                                <th class="p-4 font-semibold text-gray-600">Total Spent</th>
+                                <th class="p-4 font-semibold text-gray-600">Last Service</th>
+                                <th class="p-4 font-semibold text-gray-600"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientTableBody">
+                            <tr><td colspan="6" class="p-8 text-center text-gray-400">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals (Same as before, kept brief for space - they're all here) -->
     <div id="newClientModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
             <div class="p-6">
@@ -115,7 +157,6 @@
                         <button type="button" id="tabProfessional" class="tab-btn px-4 py-2 rounded-t-lg text-sm">📄 Professional</button>
                     </div>
 
-                    <!-- ✅ CORRECTED TECHNICAL PRICES -->
                     <div id="technicalTab" class="tab-content active space-y-2 mb-4">
                         <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
                             <input type="radio" name="service" value="Windows 11 installation + permanent activation" data-price="250" class="mr-3">
@@ -139,7 +180,6 @@
                         </label>
                     </div>
 
-                    <!-- ✅ CORRECTED PROFESSIONAL PRICES -->
                     <div id="professionalTab" class="tab-content space-y-2 mb-4">
                         <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
                             <input type="radio" name="service" value="Professional CV" data-price="45" class="mr-3">
@@ -209,11 +249,60 @@
             
             const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             let allClients = [];
+            let isLoggedIn = false;
 
-            function openModal(id) { document.getElementById(id).classList.add('active'); }
+            // Check if already logged in (session storage)
+            if (sessionStorage.getItem('cre8learn_logged_in') === 'true') {
+                showMainApp();
+            }
+
+            function showMainApp() {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                isLoggedIn = true;
+                sessionStorage.setItem('cre8learn_logged_in', 'true');
+                loadAllData();
+            }
+
+            function logout() {
+                document.getElementById('loginScreen').style.display = 'flex';
+                document.getElementById('mainApp').style.display = 'none';
+                isLoggedIn = false;
+                sessionStorage.removeItem('cre8learn_logged_in');
+                document.getElementById('loginForm').reset();
+            }
+
+            // Login handler
+            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const username = document.getElementById('loginUsername').value.trim();
+                const password = document.getElementById('loginPassword').value.trim();
+                const errorDiv = document.getElementById('loginError');
+                
+                const { data, error } = await supabaseClient
+                    .from('app_users')
+                    .select('*')
+                    .eq('username', username)
+                    .eq('password', password)
+                    .single();
+                
+                if (error || !data) {
+                    errorDiv.textContent = '❌ Invalid username or password';
+                    errorDiv.classList.remove('hidden');
+                } else {
+                    errorDiv.classList.add('hidden');
+                    showMainApp();
+                }
+            });
+
+            // Logout handler
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+
+            function openModal(id) { if (isLoggedIn) document.getElementById(id).classList.add('active'); }
             function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
             async function loadAllData() {
+                if (!isLoggedIn) return;
                 const { data: clients, error } = await supabaseClient.from('clients').select('*').order('created_at', { ascending: false });
                 if (error) { console.error(error); return; }
                 if (!clients?.length) { allClients = []; renderTable(); updateStats(); return; }
@@ -273,8 +362,7 @@
                 openModal('clientDetailModal');
             }
 
-            loadAllData();
-            
+            // Set up event listeners
             document.getElementById('btnNewClient').addEventListener('click', () => openModal('newClientModal'));
             document.getElementById('btnLogService').addEventListener('click', () => { loadDropdown(); openModal('logServiceModal'); });
             document.getElementById('cancelNewClient').addEventListener('click', () => closeModal('newClientModal'));
