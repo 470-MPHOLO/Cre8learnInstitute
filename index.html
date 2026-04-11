@@ -23,7 +23,8 @@
     <div id="loginScreen" class="fixed inset-0 bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
             <div class="text-center mb-6">
-                <h1 class="text-3xl font-bold text-indigo-900">🎓 Cre8Learn</h1>
+                <img src="cre8learn-logo.png" alt="Cre8Learn" class="h-14 mx-auto mb-3" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%224f46e5%22/%3E%3Ctext x=%2250%22 y=%2267%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22%3ECL%3C/text%3E%3C/svg%3E';">
+                <h1 class="text-3xl font-bold text-indigo-900">Cre8Learn</h1>
                 <p class="text-gray-500 mt-2">Secure Institute Access</p>
             </div>
             
@@ -46,7 +47,7 @@
             </form>
             
             <div class="text-center text-gray-400 text-xs mt-6">
-                🔒 Secure Access Only
+                Secure Access Only
             </div>
         </div>
     </div>
@@ -56,7 +57,10 @@
         <header class="bg-gradient-to-r from-indigo-900 to-purple-900 text-white p-6 shadow-lg">
             <div class="max-w-7xl mx-auto flex justify-between items-center">
                 <div>
-                    <h1 class="text-3xl font-bold tracking-tight">🎓 Cre8Learn Institute</h1>
+                    <div class="flex items-center gap-3">
+                        <img src="cre8learn-logo.png" alt="Cre8Learn" class="h-10" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22white%22/%3E%3Ctext x=%2250%22 y=%2267%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%224f46e5%22%3ECL%3C/text%3E%3C/svg%3E';">
+                        <h1 class="text-3xl font-bold tracking-tight">Cre8Learn Institute</h1>
+                    </div>
                     <p class="text-indigo-200 mt-1">Empowering learners through technology & professionalism</p>
                 </div>
                 <div class="flex items-center gap-4">
@@ -65,7 +69,7 @@
                         <div id="totalClients" class="text-3xl font-bold">0</div>
                     </div>
                     <button id="logoutBtn" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm transition">
-                        🚪 Logout
+                        Logout
                     </button>
                 </div>
             </div>
@@ -75,31 +79,31 @@
             
             <div class="flex gap-3 mb-6">
                 <button id="btnNewClient" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition">
-                    <span class="text-xl">+</span> New Client
+                    + New Client
                 </button>
                 <button id="btnLogService" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition">
-                    <span class="text-xl">📋</span> Log Service
+                    Log Service
                 </button>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div class="bg-white p-5 rounded-xl shadow-sm border">
-                    <div class="text-gray-500 text-sm mb-1">🔁 Total Services</div>
+                    <div class="text-gray-500 text-sm mb-1">Total Services</div>
                     <div id="totalServices" class="text-3xl font-bold text-indigo-700">0</div>
                 </div>
                 <div class="bg-white p-5 rounded-xl shadow-sm border">
-                    <div class="text-gray-500 text-sm mb-1">🌟 Discount Eligible</div>
+                    <div class="text-gray-500 text-sm mb-1">Discount Eligible</div>
                     <div id="discountEligible" class="text-3xl font-bold text-green-600">0</div>
                 </div>
                 <div class="bg-white p-5 rounded-xl shadow-sm border">
-                    <div class="text-gray-500 text-sm mb-1">💰 Total Revenue</div>
+                    <div class="text-gray-500 text-sm mb-1">Total Revenue</div>
                     <div id="totalRevenue" class="text-3xl font-bold text-purple-700">M0</div>
                 </div>
             </div>
 
             <div class="bg-white rounded-xl shadow-md border overflow-hidden">
                 <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
-                    <h2 class="font-semibold text-gray-800 text-lg">📋 Client Directory</h2>
+                    <h2 class="font-semibold text-gray-800 text-lg">Client Directory</h2>
                     <input type="text" id="searchInput" placeholder="Search clients..." class="px-4 py-2 border rounded-lg text-sm w-64 focus:ring-2 focus:ring-indigo-300 outline-none">
                 </div>
                 <div class="overflow-x-auto">
@@ -123,11 +127,11 @@
         </main>
     </div>
 
-    <!-- Modals (Same as before, kept brief for space - they're all here) -->
+    <!-- New Client Modal -->
     <div id="newClientModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
             <div class="p-6">
-                <h3 class="text-xl font-bold mb-4">➕ Register New Client</h3>
+                <h3 class="text-xl font-bold mb-4">Register New Client</h3>
                 <form id="newClientForm">
                     <input type="text" id="clientName" placeholder="Full Name" required class="w-full p-3 border rounded-lg mb-3">
                     <input type="text" id="clientPhone" placeholder="Phone Number" class="w-full p-3 border rounded-lg mb-3">
@@ -141,10 +145,11 @@
         </div>
     </div>
 
+    <!-- Log Service Modal -->
     <div id="logServiceModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             <div class="p-6">
-                <h3 class="text-xl font-bold mb-4">📋 Log Service for Client</h3>
+                <h3 class="text-xl font-bold mb-4">Log Service for Client</h3>
                 <form id="logServiceForm">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Select Client</label>
                     <select id="serviceClientSelect" required class="w-full p-3 border rounded-lg mb-4">
@@ -153,8 +158,8 @@
 
                     <label class="block text-sm font-medium text-gray-700 mb-2">Select Service</label>
                     <div class="flex gap-2 mb-3 border-b">
-                        <button type="button" id="tabTechnical" class="tab-btn active px-4 py-2 rounded-t-lg text-sm">💻 Technical</button>
-                        <button type="button" id="tabProfessional" class="tab-btn px-4 py-2 rounded-t-lg text-sm">📄 Professional</button>
+                        <button type="button" id="tabTechnical" class="tab-btn active px-4 py-2 rounded-t-lg text-sm">Technical</button>
+                        <button type="button" id="tabProfessional" class="tab-btn px-4 py-2 rounded-t-lg text-sm">Professional</button>
                     </div>
 
                     <div id="technicalTab" class="tab-content active space-y-2 mb-4">
@@ -209,7 +214,7 @@
                     </div>
 
                     <div id="discountNotice" class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 hidden">
-                        <span class="text-green-800">🎉 This client qualifies for 20% discount!</span>
+                        <span class="text-green-800">This client qualifies for 20% discount</span>
                     </div>
 
                     <label class="block text-sm font-medium text-gray-700 mb-1">Amount Paid (M)</label>
@@ -227,6 +232,7 @@
         </div>
     </div>
 
+    <!-- Client Detail Modal -->
     <div id="clientDetailModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[80vh] overflow-y-auto">
             <div class="p-6">
@@ -287,7 +293,7 @@
                     .single();
                 
                 if (error || !data) {
-                    errorDiv.textContent = '❌ Invalid username or password';
+                    errorDiv.textContent = 'Invalid username or password';
                     errorDiv.classList.remove('hidden');
                 } else {
                     errorDiv.classList.add('hidden');
@@ -402,7 +408,7 @@
                 closeModal('newClientModal');
                 document.getElementById('newClientForm').reset();
                 loadAllData();
-                alert('✅ Client added!');
+                alert('Client added');
             });
             
             document.getElementById('logServiceForm').addEventListener('submit', async (e) => {
@@ -424,9 +430,9 @@
                 loadAllData();
                 
                 const newVisits = (client?.visitCount || 0) + 1;
-                if (newVisits === 3) alert(`🎉 MILESTONE! ${client.name} is VIP!`);
-                else if (discounted) alert('✅ 20% discount applied!');
-                else alert('✅ Service logged!');
+                if (newVisits === 3) alert(`Milestone! ${client.name} is VIP`);
+                else if (discounted) alert('20% discount applied');
+                else alert('Service logged');
             });
             
             document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('active'); }));
