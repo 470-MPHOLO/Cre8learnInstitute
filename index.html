@@ -278,28 +278,28 @@
                 document.getElementById('loginForm').reset();
             }
 
-            // Login handler
-            document.getElementById('loginForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const username = document.getElementById('loginUsername').value.trim();
-                const password = document.getElementById('loginPassword').value.trim();
-                const errorDiv = document.getElementById('loginError');
-                
-                const { data, error } = await supabaseClient
-                    .from('app_users')
-                    .select('*')
-                    .eq('username', username)
-                    .eq('password', password)
-                    .single();
-                
-                if (error || !data) {
-                    errorDiv.textContent = 'Invalid username or password';
-                    errorDiv.classList.remove('hidden');
-                } else {
-                    errorDiv.classList.add('hidden');
-                    showMainApp();
-                }
-            });
+            // Login handler using Supabase Auth
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value.trim();
+    const errorDiv = document.getElementById('loginError');
+    
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+    });
+    
+    if (error || !data.user) {
+        errorDiv.textContent = 'Invalid username or password';
+        errorDiv.classList.remove('hidden');
+    } else {
+        errorDiv.classList.add('hidden');
+        // Store the session
+        sessionStorage.setItem('cre8learn_logged_in', 'true');
+        showMainApp();
+    }
+});
 
             // Logout handler
             document.getElementById('logoutBtn').addEventListener('click', logout);
