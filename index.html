@@ -6,6 +6,7 @@
     <title>Cre8Learn Institute | Secure Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         .modal { display: none; }
         .modal.active { display: flex; }
@@ -61,7 +62,7 @@
                         <img src="cre8learn-logo.png" alt="Cre8Learn" class="h-10" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22white%22/%3E%3Ctext x=%2250%22 y=%2267%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%224f46e5%22%3ECL%3C/text%3E%3C/svg%3E';">
                         <h1 class="text-3xl font-bold tracking-tight">Cre8Learn Institute</h1>
                     </div>
-                    <p class="text-indigo-200 mt-1">Empowering learners through technology & professionalism</p>
+                    <p class="text-indigo-200 mt-1">Empowering learners through technology &amp; professionalism</p>
                 </div>
                 <div class="flex items-center gap-4">
                     <div class="bg-white/10 px-4 py-2 rounded-lg text-right">
@@ -77,12 +78,15 @@
 
         <main class="max-w-7xl mx-auto p-6">
             
-            <div class="flex gap-3 mb-6">
+            <div class="flex gap-3 mb-6 flex-wrap">
                 <button id="btnNewClient" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition">
                     + New Client
                 </button>
                 <button id="btnLogService" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition">
                     Log Service
+                </button>
+                <button id="btnDownload" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition ml-auto">
+                    ↓ Download Spreadsheet
                 </button>
             </div>
 
@@ -139,6 +143,28 @@
                     <div class="flex gap-3">
                         <button type="submit" class="bg-indigo-600 text-white px-4 py-3 rounded-lg flex-1">Register</button>
                         <button type="button" id="cancelNewClient" class="bg-gray-200 px-4 py-3 rounded-lg flex-1">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Client Modal -->
+    <div id="editClientModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div class="p-6">
+                <h3 class="text-xl font-bold mb-4">Edit Client Details</h3>
+                <form id="editClientForm">
+                    <input type="hidden" id="editClientId">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <input type="text" id="editClientName" placeholder="Full Name" required class="w-full p-3 border rounded-lg mb-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                    <input type="text" id="editClientPhone" placeholder="Phone Number" class="w-full p-3 border rounded-lg mb-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="editClientEmail" placeholder="Email (optional)" class="w-full p-3 border rounded-lg mb-4">
+                    <div class="flex gap-3">
+                        <button type="submit" class="bg-indigo-600 text-white px-4 py-3 rounded-lg flex-1">Save Changes</button>
+                        <button type="button" id="cancelEditClient" class="bg-gray-200 px-4 py-3 rounded-lg flex-1">Cancel</button>
                     </div>
                 </form>
             </div>
@@ -214,7 +240,7 @@
                     </div>
 
                     <div id="discountNotice" class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 hidden">
-                        <span class="text-green-800">This client qualifies for 20% discount</span>
+                        <span class="text-green-800 font-medium">🎉 This visit qualifies for 20% discount (every 3rd visit)</span>
                     </div>
 
                     <label class="block text-sm font-medium text-gray-700 mb-1">Amount Paid (M)</label>
@@ -257,7 +283,13 @@
             let allClients = [];
             let isLoggedIn = false;
 
-            // Check if already logged in (session storage)
+            // ── Discount logic: discount on every visit that is a multiple of 3
+            // (3rd, 6th, 9th, …). The NEXT visit gets the discount when
+            // currentVisitCount % 3 === 2  (i.e. this new visit will be the 3rd, 6th, …)
+            function nextVisitIsDiscounted(currentVisitCount) {
+                return (currentVisitCount + 1) % 3 === 0;
+            }
+
             if (sessionStorage.getItem('cre8learn_logged_in') === 'true') {
                 showMainApp();
             }
@@ -278,30 +310,24 @@
                 document.getElementById('loginForm').reset();
             }
 
-            // Login handler using Supabase Auth
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('loginUsername').value.trim();
-    const password = document.getElementById('loginPassword').value.trim();
-    const errorDiv = document.getElementById('loginError');
-    
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email: email,
-        password: password
-    });
-    
-    if (error || !data.user) {
-        errorDiv.textContent = 'Invalid username or password';
-        errorDiv.classList.remove('hidden');
-    } else {
-        errorDiv.classList.add('hidden');
-        // Store the session
-        sessionStorage.setItem('cre8learn_logged_in', 'true');
-        showMainApp();
-    }
-});
+            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('loginUsername').value.trim();
+                const password = document.getElementById('loginPassword').value.trim();
+                const errorDiv = document.getElementById('loginError');
+                
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                
+                if (error || !data.user) {
+                    errorDiv.textContent = 'Invalid username or password';
+                    errorDiv.classList.remove('hidden');
+                } else {
+                    errorDiv.classList.add('hidden');
+                    sessionStorage.setItem('cre8learn_logged_in', 'true');
+                    showMainApp();
+                }
+            });
 
-            // Logout handler
             document.getElementById('logoutBtn').addEventListener('click', logout);
 
             function openModal(id) { if (isLoggedIn) document.getElementById(id).classList.add('active'); }
@@ -317,7 +343,9 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
                     const { data: svc } = await supabaseClient.from('services').select('*').eq('client_id', c.id).order('created_at', { ascending: false });
                     const count = svc?.length || 0;
                     const spent = svc?.reduce((s, x) => s + parseFloat(x.amount || 0), 0) || 0;
-                    return { ...c, visitCount: count, totalSpent: spent, lastService: svc?.[0]?.service_name || '—', discountEligible: count >= 3, services: svc || [] };
+                    // Has ever had at least one discounted visit (multiple of 3)
+                    const hasHadDiscount = count >= 3;
+                    return { ...c, visitCount: count, totalSpent: spent, lastService: svc?.[0]?.service_name || '—', discountEligible: hasHadDiscount, services: svc || [] };
                 }));
                 allClients = enriched;
                 renderTable();
@@ -330,6 +358,24 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
                 select.innerHTML = '<option value="">-- Choose Client --</option>' + (data || []).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
             }
 
+            function getStatusBadge(c) {
+                const v = c.visitCount;
+                if (v >= 3) {
+                    // Show VIP + next discount info
+                    const nextDiscountVisit = Math.ceil((v + 1) / 3) * 3;
+                    const visitsUntilNext = nextDiscountVisit - v;
+                    if (visitsUntilNext === 1) {
+                        return '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">VIP — Next visit: 20% off</span>';
+                    }
+                    return `<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">VIP — ${visitsUntilNext} to next discount</span>`;
+                }
+                const toFirstDiscount = 3 - v;
+                if (toFirstDiscount === 1) {
+                    return '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">Next visit: 20% off!</span>';
+                }
+                return `<span class="bg-gray-100 px-2 py-1 rounded text-xs">${toFirstDiscount} visits to discount</span>`;
+            }
+
             function renderTable(filter = '') {
                 const tbody = document.getElementById('clientTableBody');
                 if (!allClients.length) { tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center">No clients</td></tr>'; return; }
@@ -338,14 +384,18 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
                     <tr class="border-b hover:bg-gray-50">
                         <td class="p-4"><div class="font-medium">${c.name}</div><div class="text-sm text-gray-500">${c.phone || ''}</div></td>
                         <td class="p-4"><span class="font-mono text-lg font-bold ${c.visitCount>=3?'text-green-600':''}">${c.visitCount}</span></td>
-                        <td class="p-4">${c.discountEligible?'<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">VIP</span>':c.visitCount===2?'<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">Next:20% off</span>':`<span class="bg-gray-100 px-2 py-1 rounded text-xs">${3-c.visitCount} to discount</span>`}</td>
+                        <td class="p-4">${getStatusBadge(c)}</td>
                         <td class="p-4 font-medium text-purple-700">M${c.totalSpent.toFixed(2)}</td>
                         <td class="p-4 text-sm truncate max-w-[200px]">${c.lastService}</td>
-                        <td class="p-4"><button data-id="${c.id}" class="viewHistory text-indigo-600 text-sm">View →</button></td>
+                        <td class="p-4 flex gap-2">
+                            <button data-id="${c.id}" class="viewHistory text-indigo-600 text-sm hover:underline">View →</button>
+                            <button data-id="${c.id}" class="editClient text-gray-500 text-sm hover:underline">Edit</button>
+                        </td>
                     </tr>
                 `).join('');
                 document.getElementById('totalClients').textContent = allClients.length;
                 document.querySelectorAll('.viewHistory').forEach(b => b.addEventListener('click', () => viewHistory(b.dataset.id)));
+                document.querySelectorAll('.editClient').forEach(b => b.addEventListener('click', () => openEditClient(b.dataset.id)));
             }
 
             function updateStats() {
@@ -359,20 +409,107 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
                 if (!c) return;
                 document.getElementById('detailClientName').textContent = c.name + ' — History';
                 const content = document.getElementById('clientHistoryContent');
-                content.innerHTML = c.services.length ? c.services.map(s => `
-                    <div class="border rounded p-4 ${s.discounted?'bg-green-50':''} mb-2">
-                        <div class="flex justify-between"><span class="font-medium">${s.service_name}</span><span class="font-bold">M${parseFloat(s.amount).toFixed(2)}</span></div>
-                        <div class="text-sm text-gray-500">${new Date(s.created_at).toLocaleDateString()}</div>
-                    </div>
-                `).join('') + `<div class="mt-4 pt-4 border-t font-bold text-right">Total: M${c.totalSpent.toFixed(2)}</div>` : '<p class="text-center py-8 text-gray-500">No services</p>';
+                content.innerHTML = c.services.length ? c.services.map((s, idx) => {
+                    // Service number in reverse (oldest first numbering)
+                    const visitNum = c.services.length - idx;
+                    const isDiscountVisit = visitNum % 3 === 0;
+                    return `
+                    <div class="border rounded p-4 ${isDiscountVisit ? 'bg-green-50 border-green-200' : ''} mb-2">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="font-medium">${s.service_name}</span>
+                                ${isDiscountVisit ? '<span class="ml-2 bg-green-200 text-green-800 text-xs px-2 py-0.5 rounded">20% discount visit</span>' : ''}
+                            </div>
+                            <span class="font-bold">M${parseFloat(s.amount).toFixed(2)}</span>
+                        </div>
+                        <div class="text-sm text-gray-500 mt-1">Visit #${visitNum} · ${new Date(s.created_at).toLocaleDateString()}</div>
+                        ${s.notes ? `<div class="text-sm text-gray-400 mt-1">${s.notes}</div>` : ''}
+                    </div>`;
+                }).join('') + `<div class="mt-4 pt-4 border-t font-bold text-right">Total: M${c.totalSpent.toFixed(2)}</div>` : '<p class="text-center py-8 text-gray-500">No services yet</p>';
                 openModal('clientDetailModal');
             }
 
-            // Set up event listeners
+            // ── Edit Client ──
+            function openEditClient(id) {
+                const c = allClients.find(x => x.id === id);
+                if (!c) return;
+                document.getElementById('editClientId').value = c.id;
+                document.getElementById('editClientName').value = c.name || '';
+                document.getElementById('editClientPhone').value = c.phone || '';
+                document.getElementById('editClientEmail').value = c.email || '';
+                openModal('editClientModal');
+            }
+
+            document.getElementById('editClientForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('editClientId').value;
+                const name = document.getElementById('editClientName').value.trim();
+                if (!name) return alert('Name is required');
+                const { error } = await supabaseClient.from('clients').update({
+                    name,
+                    phone: document.getElementById('editClientPhone').value.trim() || null,
+                    email: document.getElementById('editClientEmail').value.trim() || null
+                }).eq('id', id);
+                if (error) { alert('Error saving changes'); return; }
+                closeModal('editClientModal');
+                loadAllData();
+                alert('Client updated successfully');
+            });
+
+            // ── Download Spreadsheet ──
+            document.getElementById('btnDownload').addEventListener('click', () => {
+                if (!allClients.length) { alert('No data to export'); return; }
+
+                const wb = XLSX.utils.book_new();
+
+                // Sheet 1: Client Summary
+                const clientRows = [['Name', 'Phone', 'Email', 'Total Visits', 'Total Spent (M)', 'Last Service', 'Registered']];
+                allClients.forEach(c => {
+                    clientRows.push([
+                        c.name,
+                        c.phone || '',
+                        c.email || '',
+                        c.visitCount,
+                        c.totalSpent.toFixed(2),
+                        c.lastService,
+                        new Date(c.created_at).toLocaleDateString()
+                    ]);
+                });
+                const ws1 = XLSX.utils.aoa_to_sheet(clientRows);
+                ws1['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 35 }, { wch: 15 }];
+                XLSX.utils.book_append_sheet(wb, ws1, 'Client Directory');
+
+                // Sheet 2: Full Transaction History
+                const txRows = [['Client Name', 'Phone', 'Service', 'Amount (M)', 'Discounted', 'Notes', 'Date']];
+                allClients.forEach(c => {
+                    const sorted = [...c.services].reverse(); // oldest first
+                    sorted.forEach((s, idx) => {
+                        const visitNum = idx + 1;
+                        txRows.push([
+                            c.name,
+                            c.phone || '',
+                            s.service_name,
+                            parseFloat(s.amount).toFixed(2),
+                            visitNum % 3 === 0 ? 'Yes (20%)' : 'No',
+                            s.notes || '',
+                            new Date(s.created_at).toLocaleDateString()
+                        ]);
+                    });
+                });
+                const ws2 = XLSX.utils.aoa_to_sheet(txRows);
+                ws2['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 35 }, { wch: 12 }, { wch: 14 }, { wch: 30 }, { wch: 15 }];
+                XLSX.utils.book_append_sheet(wb, ws2, 'Transaction History');
+
+                const date = new Date().toISOString().slice(0, 10);
+                XLSX.writeFile(wb, `Cre8Learn_Export_${date}.xlsx`);
+            });
+
+            // ── Event Listeners ──
             document.getElementById('btnNewClient').addEventListener('click', () => openModal('newClientModal'));
             document.getElementById('btnLogService').addEventListener('click', () => { loadDropdown(); openModal('logServiceModal'); });
             document.getElementById('cancelNewClient').addEventListener('click', () => closeModal('newClientModal'));
             document.getElementById('cancelLogService').addEventListener('click', () => closeModal('logServiceModal'));
+            document.getElementById('cancelEditClient').addEventListener('click', () => closeModal('editClientModal'));
             document.getElementById('closeDetailModal').addEventListener('click', () => closeModal('clientDetailModal'));
             
             document.getElementById('searchInput').addEventListener('keyup', (e) => renderTable(e.target.value));
@@ -392,19 +529,38 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
             });
             
             document.querySelectorAll('input[name="service"]').forEach(r => {
-                r.addEventListener('change', (e) => document.getElementById('serviceAmount').value = e.target.dataset.price);
+                r.addEventListener('change', (e) => {
+                    const client = allClients.find(c => c.id === document.getElementById('serviceClientSelect').value);
+                    const basePrice = parseFloat(e.target.dataset.price);
+                    if (client && nextVisitIsDiscounted(client.visitCount)) {
+                        document.getElementById('serviceAmount').value = (basePrice * 0.8).toFixed(2);
+                    } else {
+                        document.getElementById('serviceAmount').value = basePrice;
+                    }
+                });
             });
             
             document.getElementById('serviceClientSelect').addEventListener('change', () => {
                 const c = allClients.find(x => x.id === document.getElementById('serviceClientSelect').value);
-                document.getElementById('discountNotice').classList.toggle('hidden', !c || c.visitCount < 2);
+                const willDiscount = c && nextVisitIsDiscounted(c.visitCount);
+                document.getElementById('discountNotice').classList.toggle('hidden', !willDiscount);
+                // Re-apply price if service already selected
+                const checkedService = document.querySelector('input[name="service"]:checked');
+                if (checkedService) {
+                    const base = parseFloat(checkedService.dataset.price);
+                    document.getElementById('serviceAmount').value = willDiscount ? (base * 0.8).toFixed(2) : base;
+                }
             });
             
             document.getElementById('newClientForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const name = document.getElementById('clientName').value.trim();
                 if (!name) return alert('Name required');
-                await supabaseClient.from('clients').insert([{ name, phone: document.getElementById('clientPhone').value.trim() || null, email: document.getElementById('clientEmail').value.trim() || null }]);
+                await supabaseClient.from('clients').insert([{
+                    name,
+                    phone: document.getElementById('clientPhone').value.trim() || null,
+                    email: document.getElementById('clientEmail').value.trim() || null
+                }]);
                 closeModal('newClientModal');
                 document.getElementById('newClientForm').reset();
                 loadAllData();
@@ -419,20 +575,32 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
                 if (!service) return alert('Select service');
                 
                 const client = allClients.find(c => c.id === clientId);
-                let amount = parseFloat(document.getElementById('serviceAmount').value) || parseFloat(service.dataset.price) || 0;
-                const discounted = (client?.visitCount || 0) >= 2;
-                if (discounted) amount *= 0.8;
+                const currentVisits = client?.visitCount || 0;
+                const discounted = nextVisitIsDiscounted(currentVisits);
+                const basePrice = parseFloat(service.dataset.price);
+                let amount = parseFloat(document.getElementById('serviceAmount').value) || basePrice;
+                // Enforce discount if applicable (in case user didn't override)
+                if (discounted && amount === basePrice) amount = basePrice * 0.8;
                 
-                await supabaseClient.from('services').insert([{ client_id: clientId, service_name: service.value, amount, discounted, notes: document.getElementById('serviceNotes').value || null }]);
+                await supabaseClient.from('services').insert([{
+                    client_id: clientId,
+                    service_name: service.value,
+                    amount,
+                    discounted,
+                    notes: document.getElementById('serviceNotes').value || null
+                }]);
                 closeModal('logServiceModal');
                 document.getElementById('logServiceForm').reset();
                 document.getElementById('discountNotice').classList.add('hidden');
                 loadAllData();
                 
-                const newVisits = (client?.visitCount || 0) + 1;
-                if (newVisits === 3) alert(`Milestone! ${client.name} is VIP`);
-                else if (discounted) alert('20% discount applied');
-                else alert('Service logged');
+                const newVisits = currentVisits + 1;
+                if (newVisits % 3 === 0) {
+                    alert(`✅ 20% discount applied! Visit #${newVisits} for ${client.name}.`);
+                } else {
+                    const nextDiscount = Math.ceil((newVisits + 1) / 3) * 3;
+                    alert(`Service logged. Next discount in ${nextDiscount - newVisits} visit(s).`);
+                }
             });
             
             document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('active'); }));
