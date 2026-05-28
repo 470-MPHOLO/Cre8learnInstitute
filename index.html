@@ -3,610 +3,882 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cre8Learn Institute | Secure Login</title>
+    <title>Tsotty Financial Services</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- ░░░ FIREBASE — updated with your Cre8Learn project config ░░░ -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp }
+            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+        // Updated Firebase config (your Cre8Learn project)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAz7b-Nxt6hf8cVzy6TrukZVoDCNoN-IFw",
+            authDomain: "cre8learn-institute.firebaseapp.com",
+            projectId: "cre8learn-institute",
+            storageBucket: "cre8learn-institute.firebasestorage.app",
+            messagingSenderId: "278207843434",
+            appId: "1:278207843434:web:97ee5e0067369cf2080e13"
+        };
+
+        const app  = initializeApp(firebaseConfig);
+        const db   = getFirestore(app);
+        const auth = getAuth(app);
+
+        // ── expose to global scope with TSOTTY PREFIX to avoid conflicts ──
+        window._fb = { 
+            db, auth, 
+            // Using tsotty_ prefix for all collections
+            loansCollection: collection(db, 'tsotty_loans'),
+            productsCollection: collection(db, 'tsotty_products'),
+            salesCollection: collection(db, 'tsotty_sales'),
+            addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp, 
+            signInWithEmailAndPassword, signOut, onAuthStateChanged 
+        };
+    </script>
+
     <style>
-        .modal { display: none; }
-        .modal.active { display: flex; }
-        .tab-btn { background: #e5e7eb; color: #374151; }
-        .tab-btn.active { background: #4f46e5; color: white; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        #loginScreen { display: flex; }
+        :root {
+            --gold:   #C9A84C;
+            --gold2:  #DAB95E;
+            --light-bg: #F5F7FA;
+            --white:   #FFFFFF;
+            --card-bg: #FFFFFF;
+            --border:  #E2E8F0;
+            --text:    #1E293B;
+            --muted:   #64748B;
+            --green:   #10B981;
+            --red:     #EF4444;
+            --blue:    #3B82F6;
+            --yellow:  #F59E0B;
+            --panel:   #FFFFFF;
+            --dark:    #F5F7FA;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--light-bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+        h1,h2,h3 { font-family: 'DM Serif Display', serif; }
+
+        /* ── Login ── */
+        #loginScreen { position: fixed; inset: 0; background: var(--light-bg); display: flex; align-items: center; justify-content: center; z-index: 100; }
+        .login-card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 48px 40px; width: 100%; max-width: 420px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
+        .login-card h1 { color: var(--gold); font-size: 2rem; text-align: center; margin-bottom: 6px; }
+        .login-card p  { color: var(--muted); text-align: center; font-size: .9rem; margin-bottom: 32px; }
+        .field label { display: block; font-size: .8rem; font-weight: 500; color: var(--muted); margin-bottom: 6px; letter-spacing: .05em; text-transform: uppercase; }
+        .field input  { width: 100%; background: var(--white); border: 1px solid var(--border); color: var(--text); padding: 12px 14px; border-radius: 8px; font-size: .95rem; outline: none; transition: border .2s; }
+        .field input:focus { border-color: var(--gold); }
+        .field { margin-bottom: 18px; }
+        .btn-gold { width: 100%; background: var(--gold); color: #FFFFFF; font-weight: 700; padding: 13px; border-radius: 8px; border: none; cursor: pointer; font-size: 1rem; font-family: 'DM Sans', sans-serif; transition: background .2s; }
+        .btn-gold:hover { background: var(--gold2); }
+
+        /* ── App Shell ── */
         #mainApp { display: none; }
+        header { background: var(--white); border-bottom: 1px solid var(--border); padding: 18px 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        header h1 { color: var(--gold); font-size: 1.6rem; }
+        header p  { color: var(--muted); font-size: .85rem; margin-top: 2px; }
+        .nav-tabs  { display: flex; gap: 4px; background: var(--light-bg); padding: 4px; border-radius: 10px; }
+        .nav-tab   { padding: 8px 22px; border-radius: 7px; border: none; background: transparent; color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: .9rem; transition: all .2s; }
+        .nav-tab.active { background: var(--gold); color: white; }
+        .logout-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 8px 18px; border-radius: 8px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .2s; }
+        .logout-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+        main { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+
+        /* ── Stats cards ── */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+        .stat-card  { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+        .stat-card .label { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+        .stat-card .value { font-size: 2rem; font-family: 'DM Serif Display', serif; }
+
+        /* ── Table ── */
+        .table-wrap { background: var(--white); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        .table-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .table-header h2 { font-size: 1.1rem; }
+        .search-input { background: var(--white); border: 1px solid var(--border); color: var(--text); padding: 9px 14px; border-radius: 8px; font-size: .9rem; outline: none; width: 220px; font-family: 'DM Sans', sans-serif; }
+        .search-input:focus { border-color: var(--gold); }
+        table { width: 100%; border-collapse: collapse; }
+        thead th { padding: 12px 16px; text-align: left; font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; background: #F8FAFC; border-bottom: 1px solid var(--border); font-weight: 600; }
+        tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: #F8FAFC; }
+        tbody td { padding: 14px 16px; font-size: .9rem; vertical-align: middle; }
+
+        /* ── Badges ── */
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+        .badge-green  { background: #D1FAE5; color: var(--green); }
+        .badge-red    { background: #FEE2E2; color: var(--red);   }
+        .badge-yellow { background: #FEF3C7; color: var(--yellow);  }
+        .badge-blue   { background: #DBEAFE; color: var(--blue);  }
+
+        /* ── Doc checkmarks ── */
+        .doc-icons { display: flex; gap: 6px; }
+        .doc-chip  { font-size: .72rem; padding: 2px 8px; border-radius: 4px; }
+        .doc-yes   { background: #D1FAE5; color: var(--green); }
+        .doc-no    { background: #F1F5F9; color: var(--muted); }
+
+        /* ── Buttons ── */
+        .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: .88rem; transition: all .2s; }
+        .btn-primary  { background: var(--gold); color: white; }
+        .btn-primary:hover { background: var(--gold2); }
+        .btn-success  { background: var(--green); color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-ghost    { background: var(--white); border: 1px solid var(--border); color: var(--muted); }
+        .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+        .btn-danger   { background: #FEE2E2; color: var(--red); border: 1px solid #FECACA; }
+        .btn-danger:hover { background: #FECACA; }
+        .btn-export   { background: #DBEAFE; color: var(--blue); border: 1px solid #BFDBFE; }
+        .btn-export:hover { background: #BFDBFE; }
+        .action-link  { background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: .85rem; color: var(--gold); text-decoration: underline; margin-right: 8px; }
+
+        /* ── Modal ── */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 200; padding: 16px; }
+        .modal.active { display: flex; }
+        .modal-box { background: var(--white); border: 1px solid var(--border); border-radius: 16px; width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto; padding: 32px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .modal-box h3 { font-size: 1.3rem; margin-bottom: 20px; color: var(--gold); }
+        .modal-field { margin-bottom: 14px; }
+        .modal-field label { display: block; font-size: .8rem; color: var(--muted); font-weight: 500; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
+        .modal-field input, .modal-field select, .modal-field textarea { width: 100%; background: var(--white); border: 1px solid var(--border); color: var(--text); padding: 10px 13px; border-radius: 8px; font-size: .92rem; font-family: 'DM Sans', sans-serif; outline: none; }
+        .modal-field input:focus, .modal-field select:focus { border-color: var(--gold); }
+        .modal-field select option { background: var(--white); }
+        .checkbox-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
+        .checkbox-row input[type=checkbox] { width: 17px; height: 17px; accent-color: var(--gold); cursor: pointer; }
+        .checkbox-row label { font-size: .9rem; color: var(--text); cursor: pointer; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .modal-actions .btn { flex: 1; }
+        .section-title { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 10px; margin-top: 18px; }
+
+        /* ── Inventory ── */
+        .inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+        .inv-card  { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+        .inv-card .prod-name { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+        .inv-card .prod-cat  { font-size: .78rem; color: var(--muted); margin-bottom: 14px; }
+        .stock-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .stock-num { font-size: 2rem; font-family: 'DM Serif Display', serif; }
+        .stock-num.low { color: var(--red); }
+        .stock-num.ok  { color: var(--green); }
+        .inv-actions { display: flex; gap: 8px; margin-top: 14px; }
+        .inv-actions .btn { flex: 1; font-size: .8rem; padding: 8px; }
+
+        /* ── History modal ── */
+        .history-entry { background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+        .history-entry .svc-name { font-weight: 600; margin-bottom: 4px; }
+        .history-entry .svc-meta { font-size: .82rem; color: var(--muted); }
+
+        /* ── Error ── */
+        #loginError { color: var(--red); font-size: .85rem; text-align: center; margin-top: 12px; }
+        .tab-section { display: none; } .tab-section.active { display: block; }
+        .flex-wrap { flex-wrap: wrap; }
+
+        /* stock badge on table */
+        .stock-pill { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: .78rem; font-weight: 700; }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans">
-    
-    <!-- LOGIN SCREEN -->
-    <div id="loginScreen" class="fixed inset-0 bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-            <div class="text-center mb-6">
-                <img src="cre8learn-logo.png" alt="Cre8Learn" class="h-14 mx-auto mb-3" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%224f46e5%22/%3E%3Ctext x=%2250%22 y=%2267%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22%3ECL%3C/text%3E%3C/svg%3E';">
-                <h1 class="text-3xl font-bold text-indigo-900">Cre8Learn</h1>
-                <p class="text-gray-500 mt-2">Secure Institute Access</p>
-            </div>
-            
-            <form id="loginForm">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                    <input type="text" id="loginUsername" placeholder="Enter username" required class="w-full p-3 border rounded-lg">
-                </div>
-                
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <input type="password" id="loginPassword" placeholder="Enter password" required class="w-full p-3 border rounded-lg">
-                </div>
-                
-                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-lg transition">
-                    Login to Dashboard
-                </button>
-                
-                <div id="loginError" class="text-red-500 text-sm text-center mt-3 hidden"></div>
-            </form>
-            
-            <div class="text-center text-gray-400 text-xs mt-6">
-                Secure Access Only
-            </div>
+<body>
+
+<!-- ══════════════════ LOGIN ══════════════════ -->
+<div id="loginScreen">
+    <div class="login-card">
+        <h1>Tsotty</h1>
+        <p>Financial Services — Staff Portal</p>
+        <div class="field">
+            <label>Email</label>
+            <input type="email" id="loginEmail" placeholder="staff@tsotty.co.ls">
         </div>
+        <div class="field">
+            <label>Password</label>
+            <input type="password" id="loginPassword" placeholder="••••••••">
+        </div>
+        <button class="btn-gold" id="loginBtn">Sign In</button>
+        <div id="loginError"></div>
     </div>
+</div>
 
-    <!-- MAIN APP (Hidden until login) -->
-    <div id="mainApp">
-        <header class="bg-gradient-to-r from-indigo-900 to-purple-900 text-white p-6 shadow-lg">
-            <div class="max-w-7xl mx-auto flex justify-between items-center">
-                <div>
-                    <div class="flex items-center gap-3">
-                        <img src="cre8learn-logo.png" alt="Cre8Learn" class="h-10" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22white%22/%3E%3Ctext x=%2250%22 y=%2267%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%224f46e5%22%3ECL%3C/text%3E%3C/svg%3E';">
-                        <h1 class="text-3xl font-bold tracking-tight">Cre8Learn Institute</h1>
-                    </div>
-                    <p class="text-indigo-200 mt-1">Empowering learners through technology &amp; professionalism</p>
-                </div>
-                <div class="flex items-center gap-4">
-                    <div class="bg-white/10 px-4 py-2 rounded-lg text-right">
-                        <div class="text-sm opacity-80">Total Clients</div>
-                        <div id="totalClients" class="text-3xl font-bold">0</div>
-                    </div>
-                    <button id="logoutBtn" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm transition">
-                        Logout
-                    </button>
-                </div>
+<!-- ══════════════════ MAIN APP ══════════════════ -->
+<div id="mainApp">
+    <header>
+        <div>
+            <h1>Tsotty Financial Services</h1>
+            <p>Student Loans & Accessories Management</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-tab="loans">Loans</button>
+                <button class="nav-tab" data-tab="inventory">Inventory</button>
             </div>
-        </header>
+            <button class="logout-btn" id="logoutBtn">Sign Out</button>
+        </div>
+    </header>
 
-        <main class="max-w-7xl mx-auto p-6">
-            
-            <div class="flex gap-3 mb-6 flex-wrap">
-                <button id="btnNewClient" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition">
-                    + New Client
-                </button>
-                <button id="btnLogService" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition">
-                    Log Service
-                </button>
-                <button id="btnDownload" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition ml-auto">
-                    ↓ Download Spreadsheet
-                </button>
+    <main>
+
+        <!-- ═══ LOANS TAB ═══ -->
+        <div id="tab-loans" class="tab-section active">
+            <div class="stats-grid">
+                <div class="stat-card"><div class="label">Total Clients</div><div class="value" id="s-total">0</div></div>
+                <div class="stat-card"><div class="label">Active Loans</div><div class="value" style="color:var(--gold)" id="s-active">0</div></div>
+                <div class="stat-card"><div class="label">Paid Off</div><div class="value" style="color:var(--green)" id="s-paid">0</div></div>
+                <div class="stat-card"><div class="label">Overdue</div><div class="value" style="color:var(--red)" id="s-overdue">0</div></div>
+                <div class="stat-card"><div class="label">Total Loaned</div><div class="value" style="color:var(--blue);font-size:1.5rem" id="s-loaned">M0</div></div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div class="bg-white p-5 rounded-xl shadow-sm border">
-                    <div class="text-gray-500 text-sm mb-1">Total Services</div>
-                    <div id="totalServices" class="text-3xl font-bold text-indigo-700">0</div>
-                </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border">
-                    <div class="text-gray-500 text-sm mb-1">Discount Eligible</div>
-                    <div id="discountEligible" class="text-3xl font-bold text-green-600">0</div>
-                </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border">
-                    <div class="text-gray-500 text-sm mb-1">Total Revenue</div>
-                    <div id="totalRevenue" class="text-3xl font-bold text-purple-700">M0</div>
-                </div>
+            <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+                <button class="btn btn-primary" id="btnNewLoan">+ New Client</button>
+                <button class="btn btn-export" id="btnExportLoans">Export Excel</button>
             </div>
 
-            <div class="bg-white rounded-xl shadow-md border overflow-hidden">
-                <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
-                    <h2 class="font-semibold text-gray-800 text-lg">Client Directory</h2>
-                    <input type="text" id="searchInput" placeholder="Search clients..." class="px-4 py-2 border rounded-lg text-sm w-64 focus:ring-2 focus:ring-indigo-300 outline-none">
+            <div class="table-wrap">
+                <div class="table-header">
+                    <h2>Client Directory</h2>
+                    <input class="search-input" id="loanSearch" placeholder="Search by name or ID...">
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead class="bg-gray-50 border-b text-sm">
+                <div style="overflow-x:auto">
+                    <table>
+                        <thead>
                             <tr>
-                                <th class="p-4 font-semibold text-gray-600">Client</th>
-                                <th class="p-4 font-semibold text-gray-600">Visits</th>
-                                <th class="p-4 font-semibold text-gray-600">Status</th>
-                                <th class="p-4 font-semibold text-gray-600">Total Spent</th>
-                                <th class="p-4 font-semibold text-gray-600">Last Service</th>
-                                <th class="p-4 font-semibold text-gray-600"></th>
+                                <th>Client</th>
+                                <th>ID Number</th>
+                                <th>Loan Amount</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Documents</th>
+                                <th></th>
                             </tr>
                         </thead>
-                        <tbody id="clientTableBody">
-                            <tr><td colspan="6" class="p-8 text-center text-gray-400">Loading...</td></tr>
+                        <tbody id="loanTableBody">
+                            <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
-        </main>
-    </div>
+        </div>
 
-    <!-- New Client Modal -->
-    <div id="newClientModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
-            <div class="p-6">
-                <h3 class="text-xl font-bold mb-4">Register New Client</h3>
-                <form id="newClientForm">
-                    <input type="text" id="clientName" placeholder="Full Name" required class="w-full p-3 border rounded-lg mb-3">
-                    <input type="text" id="clientPhone" placeholder="Phone Number" class="w-full p-3 border rounded-lg mb-3">
-                    <input type="email" id="clientEmail" placeholder="Email (optional)" class="w-full p-3 border rounded-lg mb-4">
-                    <div class="flex gap-3">
-                        <button type="submit" class="bg-indigo-600 text-white px-4 py-3 rounded-lg flex-1">Register</button>
-                        <button type="button" id="cancelNewClient" class="bg-gray-200 px-4 py-3 rounded-lg flex-1">Cancel</button>
-                    </div>
-                </form>
+        <!-- ═══ INVENTORY TAB ═══ -->
+        <div id="tab-inventory" class="tab-section">
+            <div class="stats-grid">
+                <div class="stat-card"><div class="label">Product Types</div><div class="value" id="i-types">0</div></div>
+                <div class="stat-card"><div class="label">Total Stock</div><div class="value" style="color:var(--gold)" id="i-stock">0</div></div>
+                <div class="stat-card"><div class="label">Total Sold</div><div class="value" style="color:var(--green)" id="i-sold">0</div></div>
+                <div class="stat-card"><div class="label">Low Stock (&lt;3)</div><div class="value" style="color:var(--red)" id="i-low">0</div></div>
+                <div class="stat-card"><div class="label">Sales Revenue</div><div class="value" style="color:var(--blue);font-size:1.5rem" id="i-rev">M0</div></div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+                <button class="btn btn-primary" id="btnAddProduct">+ Add Product</button>
+                <button class="btn btn-success" id="btnRecordSale">Record Sale</button>
+                <button class="btn btn-export" id="btnExportInventory">Export Excel</button>
+            </div>
+
+            <div id="invGrid" class="inv-grid">
+                <p style="color:var(--muted);padding:40px 0">Loading inventory...</p>
             </div>
         </div>
-    </div>
 
-    <!-- Edit Client Modal -->
-    <div id="editClientModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
-            <div class="p-6">
-                <h3 class="text-xl font-bold mb-4">Edit Client Details</h3>
-                <form id="editClientForm">
-                    <input type="hidden" id="editClientId">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <input type="text" id="editClientName" placeholder="Full Name" required class="w-full p-3 border rounded-lg mb-3">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                    <input type="text" id="editClientPhone" placeholder="Phone Number" class="w-full p-3 border rounded-lg mb-3">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input type="email" id="editClientEmail" placeholder="Email (optional)" class="w-full p-3 border rounded-lg mb-4">
-                    <div class="flex gap-3">
-                        <button type="submit" class="bg-indigo-600 text-white px-4 py-3 rounded-lg flex-1">Save Changes</button>
-                        <button type="button" id="cancelEditClient" class="bg-gray-200 px-4 py-3 rounded-lg flex-1">Cancel</button>
-                    </div>
-                </form>
+    </main>
+</div>
+
+<!-- ══════════ NEW LOAN MODAL ══════════ -->
+<div id="newLoanModal" class="modal">
+    <div class="modal-box">
+        <h3>Register New Client</h3>
+        <form id="newLoanForm">
+            <div class="modal-field"><label>Full Name *</label><input type="text" id="lName" placeholder="e.g. Lerato Mokoena" required></div>
+            <div class="modal-field"><label>Phone Number</label><input type="tel" id="lPhone" placeholder="+266 5X XXX XXXX"></div>
+            <div class="modal-field"><label>ID Number</label><input type="text" id="lId" placeholder="National ID"></div>
+            <div class="modal-field"><label>Loan Amount (M)</label><input type="number" id="lAmount" placeholder="e.g. 1500" step="0.01"></div>
+            <div class="modal-field"><label>Repayment Due Date</label><input type="date" id="lDue"></div>
+            <div class="modal-field">
+                <label>Repayment Schedule</label>
+                <select id="lSchedule">
+                    <option value="">— Select —</option>
+                    <option>Weekly</option><option>Bi-weekly</option><option>Monthly</option><option>Lump sum</option>
+                </select>
             </div>
+            <div class="modal-field">
+                <label>Loan Status</label>
+                <select id="lStatus">
+                    <option value="active">Active</option>
+                    <option value="paid">Paid</option>
+                    <option value="overdue">Overdue</option>
+                </select>
+            </div>
+            <div class="section-title">Documents Collected</div>
+            <label class="checkbox-row"><input type="checkbox" id="docContract"><label for="docContract">Contract signed</label></label>
+            <label class="checkbox-row"><input type="checkbox" id="docId"><label for="docId">ID document</label></label>
+            <label class="checkbox-row"><input type="checkbox" id="docCard"><label for="docCard">Bank card (optional)</label></label>
+            <div class="modal-field" style="margin-top:14px"><label>Notes</label><textarea id="lNotes" rows="2" placeholder="Any additional info..."></textarea></div>
+            <div class="modal-actions">
+                <button type="submit" class="btn btn-primary">Register</button>
+                <button type="button" class="btn btn-ghost" id="cancelNewLoan">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══════════ EDIT LOAN MODAL ══════════ -->
+<div id="editLoanModal" class="modal">
+    <div class="modal-box">
+        <h3>Edit Client Details</h3>
+        <form id="editLoanForm">
+            <input type="hidden" id="editLoanId">
+            <div class="modal-field"><label>Full Name *</label><input type="text" id="eName" required></div>
+            <div class="modal-field"><label>Phone Number</label><input type="tel" id="ePhone"></div>
+            <div class="modal-field"><label>ID Number</label><input type="text" id="eId"></div>
+            <div class="modal-field"><label>Loan Amount (M)</label><input type="number" id="eAmount" step="0.01"></div>
+            <div class="modal-field"><label>Repayment Due Date</label><input type="date" id="eDue"></div>
+            <div class="modal-field">
+                <label>Repayment Schedule</label>
+                <select id="eSchedule">
+                    <option value="">— Select —</option>
+                    <option>Weekly</option><option>Bi-weekly</option><option>Monthly</option><option>Lump sum</option>
+                </select>
+            </div>
+            <div class="modal-field">
+                <label>Loan Status</label>
+                <select id="eStatus">
+                    <option value="active">Active</option>
+                    <option value="paid">Paid</option>
+                    <option value="overdue">Overdue</option>
+                </select>
+            </div>
+            <div class="section-title">Documents Collected</div>
+            <label class="checkbox-row"><input type="checkbox" id="eDocContract"><label for="eDocContract">Contract signed</label></label>
+            <label class="checkbox-row"><input type="checkbox" id="eDocId"><label for="eDocId">ID document</label></label>
+            <label class="checkbox-row"><input type="checkbox" id="eDocCard"><label for="eDocCard">Bank card (optional)</label></label>
+            <div class="modal-field" style="margin-top:14px"><label>Notes</label><textarea id="eNotes" rows="2"></textarea></div>
+            <div class="modal-actions">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <button type="button" class="btn btn-ghost" id="cancelEditLoan">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══════════ CLIENT HISTORY MODAL ══════════ -->
+<div id="historyModal" class="modal">
+    <div class="modal-box" style="max-width:600px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <h3 id="historyTitle" style="margin:0">Client Details</h3>
+            <button id="closeHistory" style="background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer">&times;</button>
+        </div>
+        <div id="historyContent"></div>
+    </div>
+</div>
+
+<!-- ══════════ ADD PRODUCT MODAL ══════════ -->
+<div id="addProductModal" class="modal">
+    <div class="modal-box">
+        <h3>Add Product to Inventory</h3>
+        <form id="addProductForm">
+            <div class="modal-field">
+                <label>Product Type</label>
+                <select id="pCategory" required>
+                    <option value="">— Select or add custom —</option>
+                    <option>USB-C Cable</option>
+                    <option>Lightning Cable</option>
+                    <option>Micro-USB Cable</option>
+                    <option>USB-C Adapter</option>
+                    <option>Wall Charger</option>
+                    <option>Car Charger</option>
+                    <option>Earbuds (Wired)</option>
+                    <option>Earbuds (Wireless)</option>
+                    <option value="__custom__">+ Custom name...</option>
+                </select>
+            </div>
+            <div class="modal-field" id="customNameField" style="display:none">
+                <label>Custom Product Name</label>
+                <input type="text" id="pCustomName" placeholder="e.g. Power Bank 10000mAh">
+            </div>
+            <div class="modal-field"><label>Selling Price (M)</label><input type="number" id="pPrice" step="0.01" placeholder="e.g. 85"></div>
+            <div class="modal-field"><label>Initial Stock Count</label><input type="number" id="pStock" min="0" placeholder="e.g. 10"></div>
+            <div class="modal-actions">
+                <button type="submit" class="btn btn-primary">Add Product</button>
+                <button type="button" class="btn btn-ghost" id="cancelAddProduct">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══════════ RECORD SALE MODAL ══════════ -->
+<div id="recordSaleModal" class="modal">
+    <div class="modal-box">
+        <h3>Record a Sale</h3>
+        <form id="recordSaleForm">
+            <div class="modal-field">
+                <label>Product</label>
+                <select id="saleProduct" required>
+                    <option value="">— Choose product —</option>
+                </select>
+            </div>
+            <div id="salePriceHint" style="font-size:.85rem;color:var(--muted);margin:-8px 0 12px;padding-left:2px"></div>
+            <div class="modal-field"><label>Qty Sold</label><input type="number" id="saleQty" min="1" value="1" required></div>
+            <div class="modal-field"><label>Amount Received (M) <span style="color:var(--muted);font-size:.8rem">— auto-filled, editable</span></label><input type="number" id="saleAmount" step="0.01"></div>
+            <div class="modal-field"><label>Buyer Name (optional)</label><input type="text" id="saleBuyer" placeholder="e.g. walk-in customer"></div>
+            <div class="modal-field"><label>Notes</label><input type="text" id="saleNotes" placeholder="e.g. paid cash"></div>
+            <div class="modal-actions">
+                <button type="submit" class="btn btn-success">Record Sale</button>
+                <button type="button" class="btn btn-ghost" id="cancelSale">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══════════ RESTOCK MODAL ══════════ -->
+<div id="restockModal" class="modal">
+    <div class="modal-box" style="max-width:380px">
+        <h3>Restock Item</h3>
+        <input type="hidden" id="restockProductId">
+        <p id="restockProductName" style="color:var(--gold);margin-bottom:16px;font-size:1rem"></p>
+        <div class="modal-field"><label>Units to Add</label><input type="number" id="restockQty" min="1" value="5"></div>
+        <div class="modal-actions">
+            <button class="btn btn-primary" id="confirmRestock">Add Stock</button>
+            <button class="btn btn-ghost" id="cancelRestock">Cancel</button>
         </div>
     </div>
+</div>
 
-    <!-- Log Service Modal -->
-    <div id="logServiceModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div class="p-6">
-                <h3 class="text-xl font-bold mb-4">Log Service for Client</h3>
-                <form id="logServiceForm">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Select Client</label>
-                    <select id="serviceClientSelect" required class="w-full p-3 border rounded-lg mb-4">
-                        <option value="">-- Choose Client --</option>
-                    </select>
-
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Service</label>
-                    <div class="flex gap-2 mb-3 border-b">
-                        <button type="button" id="tabTechnical" class="tab-btn active px-4 py-2 rounded-t-lg text-sm">Technical</button>
-                        <button type="button" id="tabProfessional" class="tab-btn px-4 py-2 rounded-t-lg text-sm">Professional</button>
-                    </div>
-
-                    <div id="technicalTab" class="tab-content active space-y-2 mb-4">
-                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                            <input type="radio" name="service" value="Windows 11 installation + permanent activation" data-price="250" class="mr-3">
-                            <span class="flex-1">Windows 11 installation + permanent activation</span>
-                            <span class="font-bold text-indigo-700">M250</span>
-                        </label>
-                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                            <input type="radio" name="service" value="Windows 11 installation (without activation)" data-price="150" class="mr-3">
-                            <span class="flex-1">Windows 11 installation (without activation)</span>
-                            <span class="font-bold text-indigo-700">M150</span>
-                        </label>
-                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                            <input type="radio" name="service" value="Office 2021 installation" data-price="100" class="mr-3">
-                            <span class="flex-1">Office 2021 installation</span>
-                            <span class="font-bold text-indigo-700">M100</span>
-                        </label>
-                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                            <input type="radio" name="service" value="Office 2021 activation" data-price="80" class="mr-3">
-                            <span class="flex-1">Office 2021 activation</span>
-                            <span class="font-bold text-indigo-700">M80</span>
-                        </label>
-                    </div>
-
-                    <div id="professionalTab" class="tab-content space-y-2 mb-4">
-                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                            <input type="radio" name="service" value="Professional CV" data-price="45" class="mr-3">
-                            <span class="flex-1">Professional CV</span>
-                            <span class="font-bold text-indigo-700">M45</span>
-                        </label>
-                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                            <input type="radio" name="service" value="Standard CV" data-price="20" class="mr-3">
-                            <span class="flex-1">Standard CV</span>
-                            <span class="font-bold text-indigo-700">M20</span>
-                        </label>
-                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                            <input type="radio" name="service" value="Application Letter" data-price="30" class="mr-3">
-                            <span class="flex-1">Application letter</span>
-                            <span class="font-bold text-indigo-700">M30</span>
-                        </label>
-                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                            <input type="radio" name="service" value="Poster / Flyer" data-price="60" class="mr-3">
-                            <span class="flex-1">Poster / flyer</span>
-                            <span class="font-bold text-indigo-700">M60</span>
-                        </label>
-                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                            <input type="radio" name="service" value="Poster or flyer package" data-price="100" class="mr-3">
-                            <span class="flex-1">Poster or flyer package</span>
-                            <span class="font-bold text-indigo-700">M100</span>
-                        </label>
-                    </div>
-
-                    <div id="discountNotice" class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 hidden">
-                        <span class="text-green-800 font-medium">🎉 This visit qualifies for 20% discount (every 3rd visit)</span>
-                    </div>
-
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Amount Paid (M)</label>
-                    <input type="number" id="serviceAmount" placeholder="Auto-filled" step="0.01" class="w-full p-3 border rounded-lg mb-3">
-
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
-                    <input type="text" id="serviceNotes" placeholder="e.g., Paid via cash" class="w-full p-3 border rounded-lg mb-4">
-
-                    <div class="flex gap-3">
-                        <button type="submit" class="bg-green-600 text-white px-4 py-3 rounded-lg flex-1">Log Service</button>
-                        <button type="button" id="cancelLogService" class="bg-gray-200 px-4 py-3 rounded-lg flex-1">Cancel</button>
-                    </div>
-                </form>
-            </div>
+<!-- ══════════ SALES LOG MODAL ══════════ -->
+<div id="salesLogModal" class="modal">
+    <div class="modal-box" style="max-width:600px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <h3 id="salesLogTitle" style="margin:0">Sales History</h3>
+            <button id="closeSalesLog" style="background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer">&times;</button>
         </div>
+        <div id="salesLogContent"></div>
     </div>
+</div>
 
-    <!-- Client Detail Modal -->
-    <div id="clientDetailModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[80vh] overflow-y-auto">
-            <div class="p-6">
-                <div class="flex justify-between items-start mb-4">
-                    <h3 class="text-xl font-bold" id="detailClientName">Client History</h3>
-                    <button id="closeDetailModal" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
-                </div>
-                <div id="clientHistoryContent">
-                    <p class="text-gray-500">Loading...</p>
-                </div>
-            </div>
-        </div>
-    </div>
+<script>
+window.addEventListener('load', () => {
 
-    <script>
-        window.addEventListener('load', function() {
-            
-            const SUPABASE_URL = 'https://kqzauqxyvqgncebyulds.supabase.co';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxemF1cXh5dnFnbmNlYnl1bGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MzM0NDUsImV4cCI6MjA5MTQwOTQ0NX0.SyGcJfsOYdkeo0K6szjU8OIv4Hb1g2CXzfD57Vo_PjU';
-            
-            const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            let allClients = [];
-            let isLoggedIn = false;
+    // ── Wait for Firebase to be ready ───────────────────────────────────────
+    function waitForFb(cb) {
+        if (window._fb) return cb();
+        setTimeout(() => waitForFb(cb), 80);
+    }
 
-            // ── Discount logic: discount on every visit that is a multiple of 3
-            // (3rd, 6th, 9th, …). The NEXT visit gets the discount when
-            // currentVisitCount % 3 === 2  (i.e. this new visit will be the 3rd, 6th, …)
-            function nextVisitIsDiscounted(currentVisitCount) {
-                return (currentVisitCount + 1) % 3 === 0;
-            }
+    waitForFb(() => {
+        const { db, auth, loansCollection, productsCollection, salesCollection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp, signInWithEmailAndPassword, signOut, onAuthStateChanged } = window._fb;
 
-            if (sessionStorage.getItem('cre8learn_logged_in') === 'true') {
-                showMainApp();
-            }
+        let allLoans = [];
+        let allProducts = [];
+        let allSales = [];
 
-            function showMainApp() {
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('mainApp').style.display = 'block';
-                isLoggedIn = true;
-                sessionStorage.setItem('cre8learn_logged_in', 'true');
-                loadAllData();
-            }
-
-            function logout() {
-                document.getElementById('loginScreen').style.display = 'flex';
-                document.getElementById('mainApp').style.display = 'none';
-                isLoggedIn = false;
-                sessionStorage.removeItem('cre8learn_logged_in');
-                document.getElementById('loginForm').reset();
-            }
-
-            document.getElementById('loginForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('loginUsername').value.trim();
-                const password = document.getElementById('loginPassword').value.trim();
-                const errorDiv = document.getElementById('loginError');
-                
-                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                
-                if (error || !data.user) {
-                    errorDiv.textContent = 'Invalid username or password';
-                    errorDiv.classList.remove('hidden');
-                } else {
-                    errorDiv.classList.add('hidden');
-                    sessionStorage.setItem('cre8learn_logged_in', 'true');
-                    showMainApp();
-                }
-            });
-
-            document.getElementById('logoutBtn').addEventListener('click', logout);
-
-            function openModal(id) { if (isLoggedIn) document.getElementById(id).classList.add('active'); }
-            function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-
-            async function loadAllData() {
-                if (!isLoggedIn) return;
-                const { data: clients, error } = await supabaseClient.from('clients').select('*').order('created_at', { ascending: false });
-                if (error) { console.error(error); return; }
-                if (!clients?.length) { allClients = []; renderTable(); updateStats(); return; }
-                
-                const enriched = await Promise.all(clients.map(async (c) => {
-                    const { data: svc } = await supabaseClient.from('services').select('*').eq('client_id', c.id).order('created_at', { ascending: false });
-                    const count = svc?.length || 0;
-                    const spent = svc?.reduce((s, x) => s + parseFloat(x.amount || 0), 0) || 0;
-                    // Has ever had at least one discounted visit (multiple of 3)
-                    const hasHadDiscount = count >= 3;
-                    return { ...c, visitCount: count, totalSpent: spent, lastService: svc?.[0]?.service_name || '—', discountEligible: hasHadDiscount, services: svc || [] };
-                }));
-                allClients = enriched;
-                renderTable();
-                updateStats();
-            }
-
-            async function loadDropdown() {
-                const { data } = await supabaseClient.from('clients').select('id, name').order('name');
-                const select = document.getElementById('serviceClientSelect');
-                select.innerHTML = '<option value="">-- Choose Client --</option>' + (data || []).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-            }
-
-            function getStatusBadge(c) {
-                const v = c.visitCount;
-                if (v >= 3) {
-                    // Show VIP + next discount info
-                    const nextDiscountVisit = Math.ceil((v + 1) / 3) * 3;
-                    const visitsUntilNext = nextDiscountVisit - v;
-                    if (visitsUntilNext === 1) {
-                        return '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">VIP — Next visit: 20% off</span>';
-                    }
-                    return `<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">VIP — ${visitsUntilNext} to next discount</span>`;
-                }
-                const toFirstDiscount = 3 - v;
-                if (toFirstDiscount === 1) {
-                    return '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">Next visit: 20% off!</span>';
-                }
-                return `<span class="bg-gray-100 px-2 py-1 rounded text-xs">${toFirstDiscount} visits to discount</span>`;
-            }
-
-            function renderTable(filter = '') {
-                const tbody = document.getElementById('clientTableBody');
-                if (!allClients.length) { tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center">No clients</td></tr>'; return; }
-                const filtered = allClients.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()));
-                tbody.innerHTML = filtered.map(c => `
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="p-4"><div class="font-medium">${c.name}</div><div class="text-sm text-gray-500">${c.phone || ''}</div></td>
-                        <td class="p-4"><span class="font-mono text-lg font-bold ${c.visitCount>=3?'text-green-600':''}">${c.visitCount}</span></td>
-                        <td class="p-4">${getStatusBadge(c)}</td>
-                        <td class="p-4 font-medium text-purple-700">M${c.totalSpent.toFixed(2)}</td>
-                        <td class="p-4 text-sm truncate max-w-[200px]">${c.lastService}</td>
-                        <td class="p-4 flex gap-2">
-                            <button data-id="${c.id}" class="viewHistory text-indigo-600 text-sm hover:underline">View →</button>
-                            <button data-id="${c.id}" class="editClient text-gray-500 text-sm hover:underline">Edit</button>
-                        </td>
-                    </tr>
-                `).join('');
-                document.getElementById('totalClients').textContent = allClients.length;
-                document.querySelectorAll('.viewHistory').forEach(b => b.addEventListener('click', () => viewHistory(b.dataset.id)));
-                document.querySelectorAll('.editClient').forEach(b => b.addEventListener('click', () => openEditClient(b.dataset.id)));
-            }
-
-            function updateStats() {
-                document.getElementById('totalServices').textContent = allClients.reduce((s,c)=>s+c.visitCount,0);
-                document.getElementById('discountEligible').textContent = allClients.filter(c=>c.discountEligible).length;
-                document.getElementById('totalRevenue').textContent = `M${allClients.reduce((s,c)=>s+c.totalSpent,0).toFixed(2)}`;
-            }
-
-            function viewHistory(id) {
-                const c = allClients.find(x => x.id === id);
-                if (!c) return;
-                document.getElementById('detailClientName').textContent = c.name + ' — History';
-                const content = document.getElementById('clientHistoryContent');
-                content.innerHTML = c.services.length ? c.services.map((s, idx) => {
-                    // Service number in reverse (oldest first numbering)
-                    const visitNum = c.services.length - idx;
-                    const isDiscountVisit = visitNum % 3 === 0;
-                    return `
-                    <div class="border rounded p-4 ${isDiscountVisit ? 'bg-green-50 border-green-200' : ''} mb-2">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <span class="font-medium">${s.service_name}</span>
-                                ${isDiscountVisit ? '<span class="ml-2 bg-green-200 text-green-800 text-xs px-2 py-0.5 rounded">20% discount visit</span>' : ''}
-                            </div>
-                            <span class="font-bold">M${parseFloat(s.amount).toFixed(2)}</span>
-                        </div>
-                        <div class="text-sm text-gray-500 mt-1">Visit #${visitNum} · ${new Date(s.created_at).toLocaleDateString()}</div>
-                        ${s.notes ? `<div class="text-sm text-gray-400 mt-1">${s.notes}</div>` : ''}
-                    </div>`;
-                }).join('') + `<div class="mt-4 pt-4 border-t font-bold text-right">Total: M${c.totalSpent.toFixed(2)}</div>` : '<p class="text-center py-8 text-gray-500">No services yet</p>';
-                openModal('clientDetailModal');
-            }
-
-            // ── Edit Client ──
-            function openEditClient(id) {
-                const c = allClients.find(x => x.id === id);
-                if (!c) return;
-                document.getElementById('editClientId').value = c.id;
-                document.getElementById('editClientName').value = c.name || '';
-                document.getElementById('editClientPhone').value = c.phone || '';
-                document.getElementById('editClientEmail').value = c.email || '';
-                openModal('editClientModal');
-            }
-
-            document.getElementById('editClientForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const id = document.getElementById('editClientId').value;
-                const name = document.getElementById('editClientName').value.trim();
-                if (!name) return alert('Name is required');
-                const { error } = await supabaseClient.from('clients').update({
-                    name,
-                    phone: document.getElementById('editClientPhone').value.trim() || null,
-                    email: document.getElementById('editClientEmail').value.trim() || null
-                }).eq('id', id);
-                if (error) { alert('Error saving changes'); return; }
-                closeModal('editClientModal');
-                loadAllData();
-                alert('Client updated successfully');
-            });
-
-            // ── Download Spreadsheet ──
-            document.getElementById('btnDownload').addEventListener('click', () => {
-                if (!allClients.length) { alert('No data to export'); return; }
-
-                const wb = XLSX.utils.book_new();
-
-                // Sheet 1: Client Summary
-                const clientRows = [['Name', 'Phone', 'Email', 'Total Visits', 'Total Spent (M)', 'Last Service', 'Registered']];
-                allClients.forEach(c => {
-                    clientRows.push([
-                        c.name,
-                        c.phone || '',
-                        c.email || '',
-                        c.visitCount,
-                        c.totalSpent.toFixed(2),
-                        c.lastService,
-                        new Date(c.created_at).toLocaleDateString()
-                    ]);
-                });
-                const ws1 = XLSX.utils.aoa_to_sheet(clientRows);
-                ws1['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 35 }, { wch: 15 }];
-                XLSX.utils.book_append_sheet(wb, ws1, 'Client Directory');
-
-                // Sheet 2: Full Transaction History
-                const txRows = [['Client Name', 'Phone', 'Service', 'Amount (M)', 'Discounted', 'Notes', 'Date']];
-                allClients.forEach(c => {
-                    const sorted = [...c.services].reverse(); // oldest first
-                    sorted.forEach((s, idx) => {
-                        const visitNum = idx + 1;
-                        txRows.push([
-                            c.name,
-                            c.phone || '',
-                            s.service_name,
-                            parseFloat(s.amount).toFixed(2),
-                            visitNum % 3 === 0 ? 'Yes (20%)' : 'No',
-                            s.notes || '',
-                            new Date(s.created_at).toLocaleDateString()
-                        ]);
-                    });
-                });
-                const ws2 = XLSX.utils.aoa_to_sheet(txRows);
-                ws2['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 35 }, { wch: 12 }, { wch: 14 }, { wch: 30 }, { wch: 15 }];
-                XLSX.utils.book_append_sheet(wb, ws2, 'Transaction History');
-
-                const date = new Date().toISOString().slice(0, 10);
-                XLSX.writeFile(wb, `Cre8Learn_Export_${date}.xlsx`);
-            });
-
-            // ── Event Listeners ──
-            document.getElementById('btnNewClient').addEventListener('click', () => openModal('newClientModal'));
-            document.getElementById('btnLogService').addEventListener('click', () => { loadDropdown(); openModal('logServiceModal'); });
-            document.getElementById('cancelNewClient').addEventListener('click', () => closeModal('newClientModal'));
-            document.getElementById('cancelLogService').addEventListener('click', () => closeModal('logServiceModal'));
-            document.getElementById('cancelEditClient').addEventListener('click', () => closeModal('editClientModal'));
-            document.getElementById('closeDetailModal').addEventListener('click', () => closeModal('clientDetailModal'));
-            
-            document.getElementById('searchInput').addEventListener('keyup', (e) => renderTable(e.target.value));
-            
-            document.getElementById('tabTechnical').addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                document.getElementById('tabTechnical').classList.add('active');
-                document.getElementById('technicalTab').classList.add('active');
-            });
-            
-            document.getElementById('tabProfessional').addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                document.getElementById('tabProfessional').classList.add('active');
-                document.getElementById('professionalTab').classList.add('active');
-            });
-            
-            document.querySelectorAll('input[name="service"]').forEach(r => {
-                r.addEventListener('change', (e) => {
-                    const client = allClients.find(c => c.id === document.getElementById('serviceClientSelect').value);
-                    const basePrice = parseFloat(e.target.dataset.price);
-                    if (client && nextVisitIsDiscounted(client.visitCount)) {
-                        document.getElementById('serviceAmount').value = (basePrice * 0.8).toFixed(2);
-                    } else {
-                        document.getElementById('serviceAmount').value = basePrice;
-                    }
-                });
-            });
-            
-            document.getElementById('serviceClientSelect').addEventListener('change', () => {
-                const c = allClients.find(x => x.id === document.getElementById('serviceClientSelect').value);
-                const willDiscount = c && nextVisitIsDiscounted(c.visitCount);
-                document.getElementById('discountNotice').classList.toggle('hidden', !willDiscount);
-                // Re-apply price if service already selected
-                const checkedService = document.querySelector('input[name="service"]:checked');
-                if (checkedService) {
-                    const base = parseFloat(checkedService.dataset.price);
-                    document.getElementById('serviceAmount').value = willDiscount ? (base * 0.8).toFixed(2) : base;
-                }
-            });
-            
-            document.getElementById('newClientForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const name = document.getElementById('clientName').value.trim();
-                if (!name) return alert('Name required');
-                await supabaseClient.from('clients').insert([{
-                    name,
-                    phone: document.getElementById('clientPhone').value.trim() || null,
-                    email: document.getElementById('clientEmail').value.trim() || null
-                }]);
-                closeModal('newClientModal');
-                document.getElementById('newClientForm').reset();
-                loadAllData();
-                alert('Client added');
-            });
-            
-            document.getElementById('logServiceForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const clientId = document.getElementById('serviceClientSelect').value;
-                const service = document.querySelector('input[name="service"]:checked');
-                if (!clientId) return alert('Select client');
-                if (!service) return alert('Select service');
-                
-                const client = allClients.find(c => c.id === clientId);
-                const currentVisits = client?.visitCount || 0;
-                const discounted = nextVisitIsDiscounted(currentVisits);
-                const basePrice = parseFloat(service.dataset.price);
-                let amount = parseFloat(document.getElementById('serviceAmount').value) || basePrice;
-                // Enforce discount if applicable (in case user didn't override)
-                if (discounted && amount === basePrice) amount = basePrice * 0.8;
-                
-                await supabaseClient.from('services').insert([{
-                    client_id: clientId,
-                    service_name: service.value,
-                    amount,
-                    discounted,
-                    notes: document.getElementById('serviceNotes').value || null
-                }]);
-                closeModal('logServiceModal');
-                document.getElementById('logServiceForm').reset();
-                document.getElementById('discountNotice').classList.add('hidden');
-                loadAllData();
-                
-                const newVisits = currentVisits + 1;
-                if (newVisits % 3 === 0) {
-                    alert(`✅ 20% discount applied! Visit #${newVisits} for ${client.name}.`);
-                } else {
-                    const nextDiscount = Math.ceil((newVisits + 1) / 3) * 3;
-                    alert(`Service logged. Next discount in ${nextDiscount - newVisits} visit(s).`);
-                }
-            });
-            
-            document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('active'); }));
-            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active')); });
-            
+        // ── AUTH ─────────────────────────────────────────────────────────────
+        onAuthStateChanged(auth, user => {
+            if (user) showApp();
+            else showLogin();
         });
-    </script>
+
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            const email    = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const err      = document.getElementById('loginError');
+            err.textContent = '';
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch(e) {
+                err.textContent = 'Invalid email or password.';
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
+
+        function showApp()   { document.getElementById('loginScreen').style.display='none'; document.getElementById('mainApp').style.display='block'; loadAll(); }
+        function showLogin() { document.getElementById('loginScreen').style.display='flex'; document.getElementById('mainApp').style.display='none'; }
+
+        // ── TAB SWITCHING ────────────────────────────────────────────────────
+        document.querySelectorAll('.nav-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+                document.querySelectorAll('.tab-section').forEach(s=>s.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+            });
+        });
+
+        // ── MODAL HELPERS ────────────────────────────────────────────────────
+        const openModal  = id => document.getElementById(id).classList.add('active');
+        const closeModal = id => document.getElementById(id).classList.remove('active');
+        document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target===m) m.classList.remove('active'); }));
+        document.addEventListener('keydown', e => { if (e.key==='Escape') document.querySelectorAll('.modal.active').forEach(m=>m.classList.remove('active')); });
+
+        // ── LOAD ALL ─────────────────────────────────────────────────────────
+        async function loadAll() {
+            await Promise.all([loadLoans(), loadProducts(), loadSales()]);
+        }
+
+        // ══════════════════════════════════════════
+        //   LOANS (tsotty_loans)
+        // ══════════════════════════════════════════
+        async function loadLoans() {
+            const snap = await getDocs(query(loansCollection, orderBy('createdAt','desc')));
+            allLoans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderLoans();
+        }
+
+        function renderLoans(filter='') {
+            const tbody = document.getElementById('loanTableBody');
+            const filtered = allLoans.filter(l =>
+                (l.name||'').toLowerCase().includes(filter.toLowerCase()) ||
+                (l.idNumber||'').toLowerCase().includes(filter.toLowerCase())
+            );
+
+            document.getElementById('s-total').textContent   = allLoans.length;
+            document.getElementById('s-active').textContent  = allLoans.filter(l=>l.status==='active').length;
+            document.getElementById('s-paid').textContent    = allLoans.filter(l=>l.status==='paid').length;
+            document.getElementById('s-overdue').textContent = allLoans.filter(l=>l.status==='overdue').length;
+            document.getElementById('s-loaned').textContent  = 'M'+allLoans.reduce((s,l)=>s+parseFloat(l.amount||0),0).toFixed(2);
+
+            if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">${allLoans.length?'No results':'No clients yet'}</td></tr>`; return; }
+
+            tbody.innerHTML = filtered.map(l => {
+                const statusBadge = {
+                    active:  '<span class="badge badge-yellow">Active</span>',
+                    paid:    '<span class="badge badge-green">Paid</span>',
+                    overdue: '<span class="badge badge-red">Overdue</span>'
+                }[l.status] || '<span class="badge">—</span>';
+
+                const docs = `
+                    <div class="doc-icons">
+                        <span class="doc-chip ${l.docContract?'doc-yes':'doc-no'}" title="Contract">CTR</span>
+                        <span class="doc-chip ${l.docId?'doc-yes':'doc-no'}" title="ID">ID</span>
+                        <span class="doc-chip ${l.docCard?'doc-yes':'doc-no'}" title="Bank Card">CARD</span>
+                    </div>`;
+
+                return `<tr>
+                    <td><div style="font-weight:600">${l.name}</div><div style="font-size:.8rem;color:var(--muted)">${l.phone||''}</div></td>
+                    <td style="color:var(--muted);font-size:.88rem">${l.idNumber||'—'}</td>
+                    <td style="font-weight:700;color:var(--gold)">M${parseFloat(l.amount||0).toFixed(2)}</td>
+                    <td style="font-size:.88rem">${l.dueDate||'—'}</td>
+                    <td>${statusBadge}</td>
+                    <td>${docs}</td>
+                    <td>
+                        <button class="action-link" onclick="viewLoan('${l.id}')">View</button>
+                        <button class="action-link" style="color:var(--muted)" onclick="editLoan('${l.id}')">Edit</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        document.getElementById('loanSearch').addEventListener('keyup', e => renderLoans(e.target.value));
+
+        // New loan
+        document.getElementById('btnNewLoan').addEventListener('click', () => openModal('newLoanModal'));
+        document.getElementById('cancelNewLoan').addEventListener('click', () => closeModal('newLoanModal'));
+        document.getElementById('newLoanForm').addEventListener('submit', async e => {
+            e.preventDefault();
+            await addDoc(loansCollection, {
+                name: document.getElementById('lName').value.trim(),
+                phone: document.getElementById('lPhone').value.trim(),
+                idNumber: document.getElementById('lId').value.trim(),
+                amount: parseFloat(document.getElementById('lAmount').value)||0,
+                dueDate: document.getElementById('lDue').value,
+                schedule: document.getElementById('lSchedule').value,
+                status: document.getElementById('lStatus').value,
+                docContract: document.getElementById('docContract').checked,
+                docId: document.getElementById('docId').checked,
+                docCard: document.getElementById('docCard').checked,
+                notes: document.getElementById('lNotes').value.trim(),
+                createdAt: serverTimestamp()
+            });
+            closeModal('newLoanModal');
+            document.getElementById('newLoanForm').reset();
+            await loadLoans();
+            alert('Client registered.');
+        });
+
+        // Edit loan
+        window.editLoan = id => {
+            const l = allLoans.find(x=>x.id===id); if (!l) return;
+            document.getElementById('editLoanId').value = id;
+            document.getElementById('eName').value    = l.name||'';
+            document.getElementById('ePhone').value   = l.phone||'';
+            document.getElementById('eId').value      = l.idNumber||'';
+            document.getElementById('eAmount').value  = l.amount||'';
+            document.getElementById('eDue').value     = l.dueDate||'';
+            document.getElementById('eSchedule').value= l.schedule||'';
+            document.getElementById('eStatus').value  = l.status||'active';
+            document.getElementById('eDocContract').checked = !!l.docContract;
+            document.getElementById('eDocId').checked       = !!l.docId;
+            document.getElementById('eDocCard').checked     = !!l.docCard;
+            document.getElementById('eNotes').value   = l.notes||'';
+            openModal('editLoanModal');
+        };
+        document.getElementById('cancelEditLoan').addEventListener('click', ()=>closeModal('editLoanModal'));
+        document.getElementById('editLoanForm').addEventListener('submit', async e => {
+            e.preventDefault();
+            const id = document.getElementById('editLoanId').value;
+            await updateDoc(doc(db, 'tsotty_loans', id), {
+                name: document.getElementById('eName').value.trim(),
+                phone: document.getElementById('ePhone').value.trim(),
+                idNumber: document.getElementById('eId').value.trim(),
+                amount: parseFloat(document.getElementById('eAmount').value)||0,
+                dueDate: document.getElementById('eDue').value,
+                schedule: document.getElementById('eSchedule').value,
+                status: document.getElementById('eStatus').value,
+                docContract: document.getElementById('eDocContract').checked,
+                docId: document.getElementById('eDocId').checked,
+                docCard: document.getElementById('eDocCard').checked,
+                notes: document.getElementById('eNotes').value.trim()
+            });
+            closeModal('editLoanModal');
+            await loadLoans();
+            alert('Client updated.');
+        });
+
+        // View loan history
+        window.viewLoan = id => {
+            const l = allLoans.find(x=>x.id===id); if (!l) return;
+            document.getElementById('historyTitle').textContent = l.name + ' — Full Details';
+            const statusColor = { active:'var(--gold)', paid:'var(--green)', overdue:'var(--red)' }[l.status]||'var(--text)';
+            document.getElementById('historyContent').innerHTML = `
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+                    <div class="history-entry"><div class="svc-meta">Phone</div><div style="font-weight:600">${l.phone||'—'}</div></div>
+                    <div class="history-entry"><div class="svc-meta">ID Number</div><div style="font-weight:600">${l.idNumber||'—'}</div></div>
+                    <div class="history-entry"><div class="svc-meta">Loan Amount</div><div style="font-weight:700;color:var(--gold)">M${parseFloat(l.amount||0).toFixed(2)}</div></div>
+                    <div class="history-entry"><div class="svc-meta">Status</div><div style="font-weight:700;color:${statusColor}">${(l.status||'').toUpperCase()}</div></div>
+                    <div class="history-entry"><div class="svc-meta">Due Date</div><div style="font-weight:600">${l.dueDate||'—'}</div></div>
+                    <div class="history-entry"><div class="svc-meta">Schedule</div><div style="font-weight:600">${l.schedule||'—'}</div></div>
+                </div>
+                <div class="history-entry" style="margin-bottom:12px">
+                    <div class="svc-meta" style="margin-bottom:8px">Documents Collected</div>
+                    <div style="display:flex;gap:8px">
+                        <span class="badge ${l.docContract?'badge-green':'badge-red'}">Contract ${l.docContract?'✓':'✗'}</span>
+                        <span class="badge ${l.docId?'badge-green':'badge-red'}">ID ${l.docId?'✓':'✗'}</span>
+                        <span class="badge ${l.docCard?'badge-green':'badge-red'}">Bank Card ${l.docCard?'✓':'✗'}</span>
+                    </div>
+                </div>
+                ${l.notes?`<div class="history-entry"><div class="svc-meta">Notes</div><div>${l.notes}</div></div>`:''}
+                <div style="color:var(--muted);font-size:.8rem;margin-top:12px">
+                    Registered: ${l.createdAt?.toDate ? l.createdAt.toDate().toLocaleDateString() : '—'}
+                </div>`;
+            openModal('historyModal');
+        };
+        document.getElementById('closeHistory').addEventListener('click', ()=>closeModal('historyModal'));
+
+        // Export loans
+        document.getElementById('btnExportLoans').addEventListener('click', () => {
+            if (!allLoans.length) { alert('No data to export'); return; }
+            const wb = XLSX.utils.book_new();
+            const rows = [['Name','Phone','ID Number','Loan Amount (M)','Due Date','Schedule','Status','Contract','ID Doc','Bank Card','Notes','Registered']];
+            allLoans.forEach(l => rows.push([
+                l.name, l.phone||'', l.idNumber||'',
+                parseFloat(l.amount||0).toFixed(2),
+                l.dueDate||'', l.schedule||'', l.status||'',
+                l.docContract?'Yes':'No', l.docId?'Yes':'No', l.docCard?'Yes':'No',
+                l.notes||'',
+                l.createdAt?.toDate ? l.createdAt.toDate().toLocaleDateString() : ''
+            ]));
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            ws['!cols'] = [{wch:22},{wch:15},{wch:15},{wch:14},{wch:12},{wch:12},{wch:10},{wch:10},{wch:8},{wch:10},{wch:30},{wch:14}];
+            XLSX.utils.book_append_sheet(wb, ws, 'Loan Clients');
+            XLSX.writeFile(wb, `Tsotty_Loans_${new Date().toISOString().slice(0,10)}.xlsx`);
+        });
+
+        // ══════════════════════════════════════════
+        //   INVENTORY (tsotty_products / tsotty_sales)
+        // ══════════════════════════════════════════
+        async function loadProducts() {
+            const snap = await getDocs(query(productsCollection, orderBy('createdAt','desc')));
+            allProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        async function loadSales() {
+            const snap = await getDocs(query(salesCollection, orderBy('createdAt','desc')));
+            allSales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderInventory();
+        }
+
+        function renderInventory() {
+            const grid = document.getElementById('invGrid');
+            const low = allProducts.filter(p => (p.stock||0) < 3).length;
+            const totalStock = allProducts.reduce((s,p)=>s+(p.stock||0),0);
+            const totalSold  = allSales.reduce((s,x)=>s+(x.qty||1),0);
+            const totalRev   = allSales.reduce((s,x)=>s+parseFloat(x.amount||0),0);
+
+            document.getElementById('i-types').textContent = allProducts.length;
+            document.getElementById('i-stock').textContent = totalStock;
+            document.getElementById('i-sold').textContent  = totalSold;
+            document.getElementById('i-low').textContent   = low;
+            document.getElementById('i-rev').textContent   = 'M'+totalRev.toFixed(2);
+
+            if (!allProducts.length) { grid.innerHTML = '<p style="color:var(--muted);padding:40px 0">No products yet — add one above.</p>'; return; }
+
+            grid.innerHTML = allProducts.map(p => {
+                const productSales = allSales.filter(s=>s.productId===p.id);
+                const unitsSold    = productSales.reduce((s,x)=>s+(x.qty||1),0);
+                const revenue      = productSales.reduce((s,x)=>s+parseFloat(x.amount||0),0);
+                const stockClass   = (p.stock||0) < 3 ? 'low' : 'ok';
+                return `<div class="inv-card">
+                    <div class="prod-name">${p.name}</div>
+                    <div class="prod-cat" style="font-size:.78rem;color:var(--muted)">Price: <strong style="color:var(--text)">M${parseFloat(p.price||0).toFixed(2)}</strong></div>
+                    <div class="stock-row">
+                        <div>
+                            <div style="font-size:.75rem;color:var(--muted);margin-bottom:2px">IN STOCK</div>
+                            <div class="stock-num ${stockClass}">${p.stock||0}</div>
+                        </div>
+                        <div style="text-align:right">
+                            <div style="font-size:.75rem;color:var(--muted);margin-bottom:2px">SOLD</div>
+                            <div style="font-size:1.6rem;font-family:'DM Serif Display',serif;color:var(--green)">${unitsSold}</div>
+                        </div>
+                    </div>
+                    <div style="font-size:.82rem;color:var(--muted);margin-bottom:12px">Revenue: <strong style="color:var(--text)">M${revenue.toFixed(2)}</strong></div>
+                    ${(p.stock||0)<3?'<div style="font-size:.78rem;color:var(--red);margin-bottom:8px">Low stock warning</div>':''}
+                    <div class="inv-actions">
+                        <button class="btn btn-ghost" style="font-size:.78rem" onclick="openRestock('${p.id}')">Restock</button>
+                        <button class="btn btn-ghost" style="font-size:.78rem" onclick="viewSalesLog('${p.id}')">Sales log</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // Add product
+        document.getElementById('btnAddProduct').addEventListener('click', () => openModal('addProductModal'));
+        document.getElementById('cancelAddProduct').addEventListener('click', () => closeModal('addProductModal'));
+        document.getElementById('pCategory').addEventListener('change', e => {
+            document.getElementById('customNameField').style.display = e.target.value==='__custom__' ? 'block' : 'none';
+        });
+        document.getElementById('addProductForm').addEventListener('submit', async e => {
+            e.preventDefault();
+            let name = document.getElementById('pCategory').value;
+            if (name === '__custom__') name = document.getElementById('pCustomName').value.trim();
+            if (!name) return alert('Please enter a product name');
+            await addDoc(productsCollection, {
+                name,
+                price: parseFloat(document.getElementById('pPrice').value)||0,
+                stock: parseInt(document.getElementById('pStock').value)||0,
+                createdAt: serverTimestamp()
+            });
+            closeModal('addProductModal');
+            document.getElementById('addProductForm').reset();
+            document.getElementById('customNameField').style.display='none';
+            await loadProducts();
+            renderInventory();
+            alert('Product added.');
+        });
+
+        // Record sale
+        document.getElementById('btnRecordSale').addEventListener('click', () => {
+            const sel = document.getElementById('saleProduct');
+            sel.innerHTML = '<option value="">— Choose product —</option>' +
+                allProducts.map(p=>`<option value="${p.id}" data-price="${p.price}" data-stock="${p.stock}">${p.name} (${p.stock||0} in stock)</option>`).join('');
+            document.getElementById('salePriceHint').textContent='';
+            openModal('recordSaleModal');
+        });
+        document.getElementById('cancelSale').addEventListener('click', ()=>closeModal('recordSaleModal'));
+        document.getElementById('saleProduct').addEventListener('change', e => {
+            const opt = e.target.options[e.target.selectedIndex];
+            const price = parseFloat(opt.dataset.price)||0;
+            document.getElementById('saleAmount').value = price||'';
+            document.getElementById('salePriceHint').textContent = price ? `Unit price: M${price.toFixed(2)}` : '';
+        });
+        document.getElementById('saleQty').addEventListener('input', () => {
+            const opt = document.getElementById('saleProduct').options[document.getElementById('saleProduct').selectedIndex];
+            const price = parseFloat(opt?.dataset?.price)||0;
+            const qty   = parseInt(document.getElementById('saleQty').value)||1;
+            if (price) document.getElementById('saleAmount').value = (price*qty).toFixed(2);
+        });
+        document.getElementById('recordSaleForm').addEventListener('submit', async e => {
+            e.preventDefault();
+            const productId = document.getElementById('saleProduct').value;
+            if (!productId) return alert('Select a product');
+            const product = allProducts.find(p=>p.id===productId);
+            const qty   = parseInt(document.getElementById('saleQty').value)||1;
+            const stock = product?.stock||0;
+            if (qty > stock) return alert(`Only ${stock} unit(s) in stock`);
+            const amount = parseFloat(document.getElementById('saleAmount').value)||0;
+            await addDoc(salesCollection, {
+                productId, productName: product.name,
+                qty, amount,
+                buyer: document.getElementById('saleBuyer').value.trim(),
+                notes: document.getElementById('saleNotes').value.trim(),
+                createdAt: serverTimestamp()
+            });
+            // Deduct stock
+            await updateDoc(doc(db, 'tsotty_products', productId), { stock: stock - qty });
+            closeModal('recordSaleModal');
+            document.getElementById('recordSaleForm').reset();
+            await loadProducts();
+            await loadSales();
+            alert(`Sale recorded. ${stock-qty} unit(s) remaining.`);
+        });
+
+        // Restock
+        window.openRestock = id => {
+            const p = allProducts.find(x=>x.id===id); if (!p) return;
+            document.getElementById('restockProductId').value = id;
+            document.getElementById('restockProductName').textContent = p.name;
+            document.getElementById('restockQty').value = 5;
+            openModal('restockModal');
+        };
+        document.getElementById('cancelRestock').addEventListener('click',()=>closeModal('restockModal'));
+        document.getElementById('confirmRestock').addEventListener('click', async () => {
+            const id  = document.getElementById('restockProductId').value;
+            const qty = parseInt(document.getElementById('restockQty').value)||0;
+            const p   = allProducts.find(x=>x.id===id); if (!p) return;
+            await updateDoc(doc(db, 'tsotty_products', id), { stock: (p.stock||0)+qty });
+            closeModal('restockModal');
+            await loadProducts();
+            renderInventory();
+            alert(`Restocked! New stock: ${(p.stock||0)+qty}`);
+        });
+
+        // Sales log
+        window.viewSalesLog = id => {
+            const p = allProducts.find(x=>x.id===id); if (!p) return;
+            const logs = allSales.filter(s=>s.productId===id);
+            document.getElementById('salesLogTitle').textContent = p.name + ' — Sales Log';
+            document.getElementById('salesLogContent').innerHTML = logs.length
+                ? logs.map(s=>`<div class="history-entry">
+                        <div class="svc-name">Qty: ${s.qty||1} x M${(parseFloat(s.amount||0)/(s.qty||1)).toFixed(2)} = <strong>M${parseFloat(s.amount||0).toFixed(2)}</strong></div>
+                        <div class="svc-meta">${s.buyer||'Walk-in'} · ${s.createdAt?.toDate ? s.createdAt.toDate().toLocaleDateString() : '—'}${s.notes?' · '+s.notes:''}</div>
+                    </div>`).join('')
+                    + `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-weight:700;text-align:right">
+                        Total: M${logs.reduce((s,x)=>s+parseFloat(x.amount||0),0).toFixed(2)}
+                        · ${logs.reduce((s,x)=>s+(x.qty||1),0)} units sold</div>`
+                : '<p style="color:var(--muted);text-align:center;padding:32px">No sales yet for this product.</p>';
+            openModal('salesLogModal');
+        };
+        document.getElementById('closeSalesLog').addEventListener('click',()=>closeModal('salesLogModal'));
+
+        // Export inventory
+        document.getElementById('btnExportInventory').addEventListener('click', () => {
+            if (!allProducts.length) { alert('No data to export'); return; }
+            const wb = XLSX.utils.book_new();
+
+            // Sheet 1: Stock
+            const stockRows = [['Product','Unit Price (M)','Current Stock','Units Sold','Revenue (M)']];
+            allProducts.forEach(p => {
+                const ps = allSales.filter(s=>s.productId===p.id);
+                stockRows.push([p.name, parseFloat(p.price||0).toFixed(2), p.stock||0,
+                    ps.reduce((s,x)=>s+(x.qty||1),0),
+                    ps.reduce((s,x)=>s+parseFloat(x.amount||0),0).toFixed(2)]);
+            });
+            const ws1 = XLSX.utils.aoa_to_sheet(stockRows);
+            ws1['!cols'] = [{wch:25},{wch:14},{wch:14},{wch:12},{wch:14}];
+            XLSX.utils.book_append_sheet(wb, ws1, 'Stock Levels');
+
+            // Sheet 2: Sales
+            const saleRows = [['Product','Qty','Amount (M)','Buyer','Notes','Date']];
+            allSales.forEach(s => saleRows.push([
+                s.productName||'', s.qty||1,
+                parseFloat(s.amount||0).toFixed(2),
+                s.buyer||'', s.notes||'',
+                s.createdAt?.toDate ? s.createdAt.toDate().toLocaleDateString() : ''
+            ]));
+            const ws2 = XLSX.utils.aoa_to_sheet(saleRows);
+            ws2['!cols'] = [{wch:25},{wch:6},{wch:12},{wch:20},{wch:25},{wch:14}];
+            XLSX.utils.book_append_sheet(wb, ws2, 'Sales History');
+
+            XLSX.writeFile(wb, `Tsotty_Inventory_${new Date().toISOString().slice(0,10)}.xlsx`);
+        });
+
+    }); // end waitForFb
+}); // end load
+</script>
 </body>
 </html>
