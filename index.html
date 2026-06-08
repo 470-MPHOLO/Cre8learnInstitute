@@ -25,6 +25,14 @@
             font-weight: 600;
             display: inline-block;
         }
+        .commission-paid {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .commission-pending {
+            background: #fed7aa;
+            color: #9b3412;
+        }
         .partner-badge {
             background: #d1fae5;
             color: #065f46;
@@ -71,7 +79,7 @@
         </div>
     </div>
 
-    <!-- MAIN APP -->
+    <!-- MAIN APP (Hidden until login) -->
     <div id="mainApp">
         <header class="bg-gradient-to-r from-indigo-900 to-purple-900 text-white p-6 shadow-lg">
             <div class="max-w-7xl mx-auto flex justify-between items-center">
@@ -137,9 +145,20 @@
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead class="bg-gray-50 border-b text-sm">
-                            <tr><th class="p-4 font-semibold text-gray-600">Client</th><th class="p-4 font-semibold text-gray-600">Visits</th><th class="p-4 font-semibold text-gray-600">Status</th><th class="p-4 font-semibold text-gray-600">Total Spent</th><th class="p-4 font-semibold text-gray-600">Last Service</th><th class="p-4 font-semibold text-gray-600">Affiliate</th><th class="p-4 font-semibold text-gray-600">Partner</th><th class="p-4 font-semibold text-gray-600"></th></tr>
+                            <tr>
+                                <th class="p-4 font-semibold text-gray-600">Client</th>
+                                <th class="p-4 font-semibold text-gray-600">Visits</th>
+                                <th class="p-4 font-semibold text-gray-600">Status</th>
+                                <th class="p-4 font-semibold text-gray-600">Total Spent</th>
+                                <th class="p-4 font-semibold text-gray-600">Last Service</th>
+                                <th class="p-4 font-semibold text-gray-600">Affiliate</th>
+                                <th class="p-4 font-semibold text-gray-600">Partner</th>
+                                <th class="p-4 font-semibold text-gray-600"></th>
+                            </tr>
                         </thead>
-                        <tbody id="clientTableBody"><tr><td colspan="8" class="p-8 text-center text-gray-400">Loading...</td></tr></tbody>
+                        <tbody id="clientTableBody">
+                            <tr><td colspan="8" class="p-8 text-center text-gray-400">Loading...</td></tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -156,7 +175,7 @@
                     <input type="text" id="clientPhone" placeholder="Phone Number" class="w-full p-3 border rounded-lg mb-3">
                     <input type="email" id="clientEmail" placeholder="Email (optional)" class="w-full p-3 border rounded-lg mb-4">
                     
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Referred By (Affiliate Client)</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Referred By (Affiliate)</label>
                     <select id="referredBy" class="w-full p-3 border rounded-lg mb-4">
                         <option value="">-- No referral / Direct --</option>
                     </select>
@@ -197,7 +216,7 @@
         </div>
     </div>
 
-    <!-- Affiliate Settings Modal (for client-affiliates) -->
+    <!-- Affiliate Settings Modal -->
     <div id="affiliateSettingsModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
             <div class="p-6">
@@ -215,7 +234,7 @@
         </div>
     </div>
 
-    <!-- Affiliate Dashboard Modal (for client-affiliates) -->
+    <!-- Affiliate Dashboard Modal -->
     <div id="affiliateDashboardModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[80vh] overflow-y-auto">
             <div class="p-6">
@@ -223,7 +242,9 @@
                     <h3 class="text-xl font-bold" id="affiliateDashboardTitle">Affiliate Dashboard</h3>
                     <button id="closeAffiliateDashboard" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                 </div>
-                <div id="affiliateDashboardContent"><p class="text-gray-500">Loading...</p></div>
+                <div id="affiliateDashboardContent">
+                    <p class="text-gray-500">Loading...</p>
+                </div>
             </div>
         </div>
     </div>
@@ -237,25 +258,6 @@
                     <button id="closePartnerDashboard" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                 </div>
                 <div id="partnerDashboardContent"><p class="text-gray-500">Loading...</p></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Mark Commission Paid Modal -->
-    <div id="markPaidModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
-            <div class="p-6">
-                <h3 class="text-xl font-bold mb-4">Mark Commission as Paid</h3>
-                <form id="markPaidForm">
-                    <input type="hidden" id="markReferralId">
-                    <p class="mb-4 text-gray-600">Confirm that you have paid this commission to the affiliate.</p>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Notes (Optional)</label>
-                    <input type="text" id="paymentNotes" placeholder="e.g., Paid via M-Pesa, Cash, etc." class="w-full p-3 border rounded-lg mb-4">
-                    <div class="flex gap-3">
-                        <button type="submit" class="bg-green-600 text-white px-4 py-3 rounded-lg flex-1">Confirm Payment</button>
-                        <button type="button" id="cancelMarkPaid" class="bg-gray-200 px-4 py-3 rounded-lg flex-1">Cancel</button>
-                    </div>
-                </form>
             </div>
         </div>
     </div>
@@ -294,6 +296,25 @@
         </div>
     </div>
 
+    <!-- Mark Commission Paid Modal -->
+    <div id="markPaidModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div class="p-6">
+                <h3 class="text-xl font-bold mb-4">Mark Commission as Paid</h3>
+                <form id="markPaidForm">
+                    <input type="hidden" id="markReferralId">
+                    <p class="mb-4 text-gray-600">Confirm that you have paid this commission to the affiliate.</p>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Notes (Optional)</label>
+                    <input type="text" id="paymentNotes" placeholder="e.g., Paid via M-Pesa, Cash, etc." class="w-full p-3 border rounded-lg mb-4">
+                    <div class="flex gap-3">
+                        <button type="submit" class="bg-green-600 text-white px-4 py-3 rounded-lg flex-1">Confirm Payment</button>
+                        <button type="button" id="cancelMarkPaid" class="bg-gray-200 px-4 py-3 rounded-lg flex-1">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Log Service Modal -->
     <div id="logServiceModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -312,18 +333,54 @@
                     </div>
 
                     <div id="technicalTab" class="tab-content active space-y-2 mb-4">
-                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="radio" name="service" value="Windows 11 installation + permanent activation" data-price="250" class="mr-3"><span class="flex-1">Windows 11 installation + permanent activation</span><span class="font-bold text-indigo-700">M250</span></label>
-                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="radio" name="service" value="Windows 11 installation (without activation)" data-price="150" class="mr-3"><span class="flex-1">Windows 11 installation (without activation)</span><span class="font-bold text-indigo-700">M150</span></label>
-                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="radio" name="service" value="Office 2021 installation" data-price="100" class="mr-3"><span class="flex-1">Office 2021 installation</span><span class="font-bold text-indigo-700">M100</span></label>
-                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="radio" name="service" value="Office 2021 activation" data-price="80" class="mr-3"><span class="flex-1">Office 2021 activation</span><span class="font-bold text-indigo-700">M80</span></label>
+                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="service" value="Windows 11 installation + permanent activation" data-price="250" class="mr-3">
+                            <span class="flex-1">Windows 11 installation + permanent activation</span>
+                            <span class="font-bold text-indigo-700">M250</span>
+                        </label>
+                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="service" value="Windows 11 installation (without activation)" data-price="150" class="mr-3">
+                            <span class="flex-1">Windows 11 installation (without activation)</span>
+                            <span class="font-bold text-indigo-700">M150</span>
+                        </label>
+                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="service" value="Office 2021 installation" data-price="100" class="mr-3">
+                            <span class="flex-1">Office 2021 installation</span>
+                            <span class="font-bold text-indigo-700">M100</span>
+                        </label>
+                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="service" value="Office 2021 activation" data-price="80" class="mr-3">
+                            <span class="flex-1">Office 2021 activation</span>
+                            <span class="font-bold text-indigo-700">M80</span>
+                        </label>
                     </div>
 
                     <div id="professionalTab" class="tab-content space-y-2 mb-4">
-                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="radio" name="service" value="Professional CV" data-price="45" class="mr-3"><span class="flex-1">Professional CV</span><span class="font-bold text-indigo-700">M45</span></label>
-                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="radio" name="service" value="Standard CV" data-price="20" class="mr-3"><span class="flex-1">Standard CV</span><span class="font-bold text-indigo-700">M20</span></label>
-                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="radio" name="service" value="Application Letter" data-price="30" class="mr-3"><span class="flex-1">Application letter</span><span class="font-bold text-indigo-700">M30</span></label>
-                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="radio" name="service" value="Poster / Flyer" data-price="60" class="mr-3"><span class="flex-1">Poster / flyer</span><span class="font-bold text-indigo-700">M60</span></label>
-                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="radio" name="service" value="Poster or flyer package" data-price="100" class="mr-3"><span class="flex-1">Poster or flyer package</span><span class="font-bold text-indigo-700">M100</span></label>
+                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="service" value="Professional CV" data-price="45" class="mr-3">
+                            <span class="flex-1">Professional CV</span>
+                            <span class="font-bold text-indigo-700">M45</span>
+                        </label>
+                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="service" value="Standard CV" data-price="20" class="mr-3">
+                            <span class="flex-1">Standard CV</span>
+                            <span class="font-bold text-indigo-700">M20</span>
+                        </label>
+                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="service" value="Application Letter" data-price="30" class="mr-3">
+                            <span class="flex-1">Application letter</span>
+                            <span class="font-bold text-indigo-700">M30</span>
+                        </label>
+                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="service" value="Poster / Flyer" data-price="60" class="mr-3">
+                            <span class="flex-1">Poster / flyer</span>
+                            <span class="font-bold text-indigo-700">M60</span>
+                        </label>
+                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="service" value="Poster or flyer package" data-price="100" class="mr-3">
+                            <span class="flex-1">Poster or flyer package</span>
+                            <span class="font-bold text-indigo-700">M100</span>
+                        </label>
                     </div>
 
                     <div id="discountNotice" class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 hidden">
@@ -353,34 +410,43 @@
                     <h3 class="text-xl font-bold" id="detailClientName">Client History</h3>
                     <button id="closeDetailModal" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                 </div>
-                <div id="clientHistoryContent"><p class="text-gray-500">Loading...</p></div>
+                <div id="clientHistoryContent">
+                    <p class="text-gray-500">Loading...</p>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         window.addEventListener('load', function() {
+            
             const SUPABASE_URL = 'https://kqzauqxyvqgncebyulds.supabase.co';
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxemF1cXh5dnFnbmNlYnl1bGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MzM0NDUsImV4cCI6MjA5MTQwOTQ0NX0.SyGcJfsOYdkeo0K6szjU8OIv4Hb1g2CXzfD57Vo_PjU';
+            
             const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             let allClients = [];
             let affiliatesList = [];
             let allPartners = [];
             let isLoggedIn = false;
 
-            function nextVisitIsDiscounted(currentVisitCount) { return (currentVisitCount + 1) % 3 === 0; }
+            // ── Discount logic: discount on every visit that is a multiple of 3
+            function nextVisitIsDiscounted(currentVisitCount) {
+                return (currentVisitCount + 1) % 3 === 0;
+            }
 
-            if (sessionStorage.getItem('cre8learn_logged_in') === 'true') showMainApp();
+            if (sessionStorage.getItem('cre8learn_logged_in') === 'true') {
+                showMainApp();
+            }
 
-            async function showMainApp() {
+            function showMainApp() {
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'block';
                 isLoggedIn = true;
                 sessionStorage.setItem('cre8learn_logged_in', 'true');
-                await loadAllData();
-                await loadAffiliatesDropdown();
-                await loadPartners();
-                await loadPartnerDropdowns();
+                loadAllData();
+                loadAffiliatesDropdown();
+                loadPartners();
+                loadPartnerDropdowns();
             }
 
             function logout() {
@@ -396,15 +462,171 @@
                 const email = document.getElementById('loginUsername').value.trim();
                 const password = document.getElementById('loginPassword').value.trim();
                 const errorDiv = document.getElementById('loginError');
+                
                 const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                if (error || !data.user) { errorDiv.textContent = 'Invalid username or password'; errorDiv.classList.remove('hidden'); } 
-                else { errorDiv.classList.add('hidden'); sessionStorage.setItem('cre8learn_logged_in', 'true'); showMainApp(); }
+                
+                if (error || !data.user) {
+                    errorDiv.textContent = 'Invalid username or password';
+                    errorDiv.classList.remove('hidden');
+                } else {
+                    errorDiv.classList.add('hidden');
+                    sessionStorage.setItem('cre8learn_logged_in', 'true');
+                    showMainApp();
+                }
             });
 
             document.getElementById('logoutBtn').addEventListener('click', logout);
+
             function openModal(id) { if (isLoggedIn) document.getElementById(id).classList.add('active'); }
             function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
+            // ── Affiliate Functions (YOUR ORIGINAL CODE) ──
+            async function loadAffiliatesDropdown() {
+                const { data, error } = await supabaseClient
+                    .from('affiliates')
+                    .select('id, client_id, commission_rate');
+                if (error) return;
+                
+                const affiliateData = [];
+                for (const aff of data) {
+                    const { data: client } = await supabaseClient
+                        .from('clients')
+                        .select('name')
+                        .eq('id', aff.client_id)
+                        .single();
+                    affiliateData.push({
+                        id: aff.id,
+                        client_id: aff.client_id,
+                        name: client?.name || 'Unknown',
+                        commission_rate: aff.commission_rate
+                    });
+                }
+                affiliatesList = affiliateData;
+                
+                const referredBySelect = document.getElementById('referredBy');
+                if (referredBySelect) {
+                    referredBySelect.innerHTML = '<option value="">-- No referral / Direct --</option>' +
+                        affiliatesList.map(a => `<option value="${a.id}">${a.name} (${a.commission_rate}%)</option>`).join('');
+                }
+            }
+
+            async function openAffiliateSettings(clientId) {
+                const { data: existing } = await supabaseClient
+                    .from('affiliates')
+                    .select('*')
+                    .eq('client_id', clientId)
+                    .single();
+                
+                document.getElementById('affiliateClientId').value = clientId;
+                document.getElementById('affiliateRate').value = existing?.commission_rate || 10;
+                openModal('affiliateSettingsModal');
+            }
+
+            async function showAffiliateDashboard(affiliateId) {
+                const affiliate = affiliatesList.find(a => a.id == affiliateId);
+                if (!affiliate) return;
+                
+                document.getElementById('affiliateDashboardTitle').textContent = `${affiliate.name} - Affiliate Dashboard`;
+                
+                const { data: referrals } = await supabaseClient
+                    .from('referrals')
+                    .select(`*, referred_client:referred_client_id(*)`)
+                    .eq('referring_affiliate_id', affiliateId)
+                    .order('created_at', { ascending: false });
+                
+                const totalEarned = (referrals || []).reduce((sum, r) => sum + parseFloat(r.commission_amount), 0);
+                const totalPaid = (referrals || []).filter(r => r.commission_paid === true).reduce((sum, r) => sum + parseFloat(r.commission_amount), 0);
+                const pendingAmount = totalEarned - totalPaid;
+                
+                let html = `
+                    <div class="grid grid-cols-3 gap-4 mb-6">
+                        <div class="bg-indigo-50 p-4 rounded-xl text-center">
+                            <div class="text-2xl font-bold text-indigo-700">M${totalEarned.toFixed(2)}</div>
+                            <div class="text-sm text-gray-600">Total Earned</div>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-xl text-center">
+                            <div class="text-2xl font-bold text-green-700">M${totalPaid.toFixed(2)}</div>
+                            <div class="text-sm text-gray-600">Paid</div>
+                        </div>
+                        <div class="bg-yellow-50 p-4 rounded-xl text-center">
+                            <div class="text-2xl font-bold text-yellow-700">M${pendingAmount.toFixed(2)}</div>
+                            <div class="text-sm text-gray-600">Pending</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-semibold">Referral History</h4>
+                        <button id="markMultiplePaidBtn" data-affiliate="${affiliateId}" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">Mark Selected as Paid</button>
+                    </div>
+                    
+                    <div class="space-y-2 max-h-96 overflow-y-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr><th class="p-2 text-left"><input type="checkbox" id="selectAllReferrals"></th><th class="p-2 text-left">Client</th><th class="p-2 text-left">Service</th><th class="p-2 text-right">Amount</th><th class="p-2 text-left">Status</th><th class="p-2 text-left">Action</th></tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                if (!referrals || referrals.length === 0) {
+                    html += '<tr><td colspan="6" class="text-center py-4 text-gray-500">No referrals yet</td></tr>';
+                } else {
+                    referrals.forEach(r => {
+                        const statusText = r.commission_paid ? 'Paid' : 'Pending';
+                        const statusColor = r.commission_paid ? 'text-green-600' : 'text-yellow-600';
+                        html += `
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="p-2"><input type="checkbox" class="referralCheckbox" data-id="${r.id}" ${r.commission_paid ? 'disabled' : ''}></td>
+                                <td class="p-2">${r.referred_client?.name || 'Unknown'}</td>
+                                <td class="p-2">${r.service_name || '-'}</td>
+                                <td class="p-2 text-right font-medium">M${parseFloat(r.commission_amount).toFixed(2)}</td>
+                                <td class="p-2"><span class="${statusColor}">${statusText}</span></td>
+                                <td class="p-2">${!r.commission_paid ? `<button onclick="markSingleCommissionAsPaid(${r.id})" class="text-green-600 text-sm hover:underline">Mark Paid</button>` : '-'}</td>
+                            </tr>
+                        `;
+                    });
+                }
+                
+                html += `</tbody>赶</div>`;
+                document.getElementById('affiliateDashboardContent').innerHTML = html;
+                openModal('affiliateDashboardModal');
+                
+                document.getElementById('selectAllReferrals')?.addEventListener('change', (e) => {
+                    document.querySelectorAll('.referralCheckbox:not(:disabled)').forEach(cb => cb.checked = e.target.checked);
+                });
+                
+                document.getElementById('markMultiplePaidBtn')?.addEventListener('click', async () => {
+                    const selectedIds = [];
+                    document.querySelectorAll('.referralCheckbox:checked').forEach(cb => {
+                        if (cb.dataset.id) selectedIds.push(parseInt(cb.dataset.id));
+                    });
+                    if (selectedIds.length === 0) { alert('Select at least one referral to mark as paid.'); return; }
+                    if (confirm(`Mark ${selectedIds.length} commission(s) as paid?`)) {
+                        for (const id of selectedIds) await markCommissionAsPaid(id);
+                        showAffiliateDashboard(affiliateId);
+                    }
+                });
+            }
+
+            async function markCommissionAsPaid(referralId, paymentNotes = '') {
+                const { error } = await supabaseClient
+                    .from('referrals')
+                    .update({ commission_paid: true, paid_at: new Date().toISOString(), status: 'paid', notes: paymentNotes || null })
+                    .eq('id', referralId);
+                if (error) { console.error(error); return false; }
+                return true;
+            }
+
+            window.markSingleCommissionAsPaid = function(referralId) {
+                const notes = prompt('Enter payment notes (e.g., Paid via M-Pesa, Reference #):');
+                if (notes !== null) {
+                    markCommissionAsPaid(referralId, notes).then(() => {
+                        const currentAffiliateId = document.querySelector('#markMultiplePaidBtn')?.dataset.affiliate;
+                        if (currentAffiliateId) showAffiliateDashboard(currentAffiliateId);
+                    });
+                }
+            };
+
+            // ── External Partner Functions (NEW ADDITION) ──
             async function loadPartners() {
                 const { data, error } = await supabaseClient.from('affiliates_partners').select('*').eq('status', 'active').order('name');
                 if (!error) allPartners = data || [];
@@ -419,53 +641,6 @@
                 }
             }
 
-            async function loadAffiliatesDropdown() {
-                const { data, error } = await supabaseClient.from('affiliates').select('id, client_id, commission_rate');
-                if (error) return;
-                const affiliateData = [];
-                for (const aff of data) {
-                    const { data: client } = await supabaseClient.from('clients').select('name').eq('id', aff.client_id).single();
-                    affiliateData.push({ id: aff.id, client_id: aff.client_id, name: client?.name || 'Unknown', commission_rate: aff.commission_rate });
-                }
-                affiliatesList = affiliateData;
-                const referredBySelect = document.getElementById('referredBy');
-                if (referredBySelect) {
-                    referredBySelect.innerHTML = '<option value="">-- No referral / Direct --</option>' + affiliatesList.map(a => `<option value="${a.id}">${a.name} (${a.commission_rate}%)</option>`).join('');
-                }
-            }
-
-            async function openAffiliateSettings(clientId) {
-                const { data: existing } = await supabaseClient.from('affiliates').select('*').eq('client_id', clientId).single();
-                document.getElementById('affiliateClientId').value = clientId;
-                document.getElementById('affiliateRate').value = existing?.commission_rate || 10;
-                openModal('affiliateSettingsModal');
-            }
-
-            async function showAffiliateDashboard(affiliateId) {
-                const affiliate = affiliatesList.find(a => a.id == affiliateId);
-                if (!affiliate) return;
-                document.getElementById('affiliateDashboardTitle').textContent = `${affiliate.name} - Affiliate Dashboard`;
-                const { data: referrals } = await supabaseClient.from('referrals').select(`*, referred_client:referred_client_id(*)`).eq('referring_affiliate_id', affiliateId).order('created_at', { ascending: false });
-                const totalEarned = (referrals || []).reduce((sum, r) => sum + parseFloat(r.commission_amount), 0);
-                const totalPaid = (referrals || []).filter(r => r.commission_paid === true).reduce((sum, r) => sum + parseFloat(r.commission_amount), 0);
-                let html = `<div class="grid grid-cols-3 gap-4 mb-6"><div class="bg-indigo-50 p-4 rounded-xl text-center"><div class="text-2xl font-bold text-indigo-700">M${totalEarned.toFixed(2)}</div><div class="text-sm">Total Earned</div></div><div class="bg-green-50 p-4 rounded-xl text-center"><div class="text-2xl font-bold text-green-700">M${totalPaid.toFixed(2)}</div><div class="text-sm">Paid</div></div><div class="bg-yellow-50 p-4 rounded-xl text-center"><div class="text-2xl font-bold text-yellow-700">M${(totalEarned - totalPaid).toFixed(2)}</div><div class="text-sm">Pending</div></div></div><div class="overflow-x-auto"><table class="w-full text-sm"><thead class="bg-gray-50"><tr><th class="p-2">Client</th><th class="p-2">Service</th><th class="p-2 text-right">Commission</th><th class="p-2">Status</th><th class="p-2">Action</th></tr></thead><tbody>`;
-                if (!referrals || referrals.length === 0) html += '<tr><td colspan="5" class="text-center py-4">No referrals yet</td></tr>';
-                else referrals.forEach(r => { html += `<tr class="border-b"><td class="p-2">${r.referred_client?.name || 'Unknown'}</td><td class="p-2">${r.service_name || '-'}</td><td class="p-2 text-right">M${parseFloat(r.commission_amount).toFixed(2)}</td><td class="p-2">${r.commission_paid ? '<span class="text-green-600">Paid</span>' : '<span class="text-yellow-600">Pending</span>'}</td><td class="p-2">${!r.commission_paid ? `<button onclick="markSingleCommissionAsPaid(${r.id})" class="text-green-600 text-sm hover:underline">Mark Paid</button>` : '-'}</td></tr>`; });
-                html += '</tbody></table></div>';
-                document.getElementById('affiliateDashboardContent').innerHTML = html;
-                openModal('affiliateDashboardModal');
-            }
-
-            async function markCommissionAsPaid(referralId, paymentNotes = '') {
-                const { error } = await supabaseClient.from('referrals').update({ commission_paid: true, paid_at: new Date().toISOString(), status: 'paid', notes: paymentNotes || null }).eq('id', referralId);
-                return !error;
-            }
-
-            window.markSingleCommissionAsPaid = async function(referralId) {
-                const notes = prompt('Enter payment notes:');
-                if (notes !== null) { await markCommissionAsPaid(referralId, notes); location.reload(); }
-            };
-
             async function addPartner(partnerData) {
                 const affiliateCode = 'PART-' + Math.random().toString(36).substring(2, 10).toUpperCase();
                 const { error } = await supabaseClient.from('affiliates_partners').insert([{
@@ -476,32 +651,20 @@
                 return affiliateCode;
             }
 
-            async function recordExternalReferral(clientId, serviceId, serviceName, amount, partnerId, commissionRate) {
-                const commissionAmount = amount * (commissionRate / 100);
-                const { error } = await supabaseClient.from('external_referrals').insert([{
-                    partner_id: partnerId, client_id: clientId, service_id: serviceId, service_name: serviceName,
-                    commission_amount: commissionAmount, commission_rate: commissionRate, commission_paid: false
-                }]);
-                if (!error && partnerId) {
-                    const { data: partner } = await supabaseClient.from('affiliates_partners').select('total_earned').eq('id', partnerId).single();
-                    if (partner) await supabaseClient.from('affiliates_partners').update({ total_earned: (partner.total_earned || 0) + commissionAmount }).eq('id', partnerId);
-                }
-            }
-
             async function showPartnerDashboard(partnerId) {
                 const partner = allPartners.find(p => p.id == partnerId);
                 if (!partner) return;
                 document.getElementById('partnerDashboardTitle').textContent = `${partner.name} - Partner Dashboard`;
                 const { data: referrals } = await supabaseClient.from('external_referrals').select(`*, client:client_id(name)`).eq('partner_id', partnerId).order('created_at', { ascending: false });
-                const totalEarned = (referrals || []).reduce((sum, r) => sum + parseFloat(r.commission_amount), 0);
-                const totalPaid = (referrals || []).filter(r => r.commission_paid).reduce((sum, r) => sum + parseFloat(r.commission_amount), 0);
+                const totalEarned = (referrals || []).reduce((sum, r) => sum + parseFloat(r.commission_amount || 0), 0);
+                const totalPaid = (referrals || []).filter(r => r.commission_paid).reduce((sum, r) => sum + parseFloat(r.commission_amount || 0), 0);
                 let html = `<div class="grid grid-cols-3 gap-4 mb-6"><div class="bg-emerald-50 p-4 rounded-xl text-center"><div class="text-2xl font-bold text-emerald-700">M${totalEarned.toFixed(2)}</div><div class="text-sm">Total Earned</div></div><div class="bg-green-50 p-4 rounded-xl text-center"><div class="text-2xl font-bold text-green-700">M${totalPaid.toFixed(2)}</div><div class="text-sm">Paid</div></div><div class="bg-yellow-50 p-4 rounded-xl text-center"><div class="text-2xl font-bold text-yellow-700">M${(totalEarned - totalPaid).toFixed(2)}</div><div class="text-sm">Pending</div></div></div><div class="overflow-x-auto"><table class="w-full text-sm"><thead class="bg-gray-50"><tr><th class="p-2">Client</th><th class="p-2">Service</th><th class="p-2 text-right">Amount</th><th class="p-2 text-right">Commission</th><th class="p-2">Status</th><th class="p-2">Action</th></tr></thead><tbody>`;
-                if (!referrals || referrals.length === 0) html += '<tr><td colspan="6" class="text-center py-4">No referrals yet</td></tr>';
+                if (!referrals || referrals.length === 0) html += '<tr><td colspan="6" class="text-center py-4 text-gray-500">No referrals yet</td></tr>';
                 else referrals.forEach(r => { 
                     const serviceAmount = r.commission_amount / (r.commission_rate / 100);
                     html += `<tr class="border-b"><td class="p-2">${r.client?.name || 'Unknown'}</td><td class="p-2">${r.service_name || '-'}</td><td class="p-2 text-right">M${serviceAmount.toFixed(2)}</td><td class="p-2 text-right font-medium">M${(r.commission_amount || 0).toFixed(2)}</td><td class="p-2">${r.commission_paid ? '<span class="text-green-600">Paid</span>' : '<span class="text-yellow-600">Pending</span>'}</td><td class="p-2">${!r.commission_paid ? `<button onclick="markPartnerCommissionPaid(${r.id})" class="text-green-600 text-sm hover:underline">Mark Paid</button>` : '-'}</td></tr>`; 
                 });
-                html += '</tbody></table></div>';
+                html += '</tbody>赶</div>';
                 document.getElementById('partnerDashboardContent').innerHTML = html;
                 openModal('partnerDashboardModal');
             }
@@ -525,26 +688,31 @@
                     const paid = referrals?.filter(r => r.commission_paid).reduce((s, r) => s + (r.commission_amount || 0), 0) || 0;
                     html += `<tr class="border-b hover:bg-gray-50"><td class="p-3 font-mono text-sm">${partner.affiliate_code}</td><td class="p-3 font-medium">${partner.name}</td><td class="p-3 text-sm">${partner.phone || '-'}<br>${partner.email || '-'}</td><td class="p-3">${partner.commission_rate}%</td><td class="p-3 text-green-600">M${earned.toFixed(2)}</td><td class="p-3 font-bold">M${(earned - paid).toFixed(2)}</td><td class="p-3"><button onclick="showPartnerDashboard(${partner.id})" class="text-indigo-600 text-sm hover:underline mr-2">View</button></td></tr>`;
                 }
-                html += '</tbody></tr>';
+                html += '</tbody>赶';
                 document.getElementById('partnersListContent').innerHTML = html;
                 openModal('viewPartnersModal');
             }
 
+            // ── Main Data Loading (YOUR ORIGINAL CODE with partner info added) ──
             async function loadAllData() {
                 if (!isLoggedIn) return;
                 const { data: clients, error } = await supabaseClient.from('clients').select('*').order('created_at', { ascending: false });
-                if (error) return;
+                if (error) { console.error(error); return; }
                 if (!clients?.length) { allClients = []; renderTable(); updateStats(); return; }
+                
                 const { data: affiliates } = await supabaseClient.from('affiliates').select('*');
-                const affiliateMap = new Map(); affiliates?.forEach(a => affiliateMap.set(a.client_id, a));
+                const affiliateMap = new Map();
+                affiliates?.forEach(a => affiliateMap.set(a.client_id, a));
+                
                 const enriched = await Promise.all(clients.map(async (c) => {
                     const { data: svc } = await supabaseClient.from('services').select('*').eq('client_id', c.id).order('created_at', { ascending: false });
                     const count = svc?.length || 0;
                     const spent = svc?.reduce((s, x) => s + parseFloat(x.amount || 0), 0) || 0;
+                    const hasHadDiscount = count >= 3;
                     const isAffiliate = affiliateMap.has(c.id);
                     const affiliateInfo = affiliateMap.get(c.id);
-                    const { data: partnerInfo } = await supabaseClient.from('affiliates_partners').select('name, commission_rate').eq('id', c.external_referral_partner_id).single();
-                    return { ...c, visitCount: count, totalSpent: spent, lastService: svc?.[0]?.service_name || '—', discountEligible: count >= 3, services: svc || [], isAffiliate, affiliateRate: affiliateInfo?.commission_rate || null, partnerName: partnerInfo?.name || null, partnerId: c.external_referral_partner_id };
+                    const { data: partnerInfo } = await supabaseClient.from('affiliates_partners').select('name').eq('id', c.external_referral_partner_id).single();
+                    return { ...c, visitCount: count, totalSpent: spent, lastService: svc?.[0]?.service_name || '—', discountEligible: hasHadDiscount, services: svc || [], isAffiliate, affiliateRate: affiliateInfo?.commission_rate || null, partnerName: partnerInfo?.name || null };
                 }));
                 allClients = enriched;
                 renderTable();
@@ -559,36 +727,55 @@
 
             function getStatusBadge(c) {
                 const v = c.visitCount;
-                if (v >= 3) { const nextDiscountVisit = Math.ceil((v + 1) / 3) * 3; const visitsUntilNext = nextDiscountVisit - v; return visitsUntilNext === 1 ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">VIP — Next visit: 20% off</span>' : `<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">VIP — ${visitsUntilNext} to next discount</span>`; }
-                const toFirstDiscount = 3 - v; return toFirstDiscount === 1 ? '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">Next visit: 20% off!</span>' : `<span class="bg-gray-100 px-2 py-1 rounded text-xs">${toFirstDiscount} visits to discount</span>`;
+                if (v >= 3) {
+                    const nextDiscountVisit = Math.ceil((v + 1) / 3) * 3;
+                    const visitsUntilNext = nextDiscountVisit - v;
+                    if (visitsUntilNext === 1) return '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">VIP — Next visit: 20% off</span>';
+                    return `<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">VIP — ${visitsUntilNext} to next discount</span>`;
+                }
+                const toFirstDiscount = 3 - v;
+                if (toFirstDiscount === 1) return '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">Next visit: 20% off!</span>';
+                return `<span class="bg-gray-100 px-2 py-1 rounded text-xs">${toFirstDiscount} visits to discount</span>`;
             }
 
             function renderTable(filter = '') {
                 const tbody = document.getElementById('clientTableBody');
                 if (!allClients.length) { tbody.innerHTML = '<tr><td colspan="8" class="p-8 text-center">No clients</td></tr>'; return; }
                 const filtered = allClients.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()));
-                tbody.innerHTML = filtered.map(c => `<tr class="border-b hover:bg-gray-50"><td class="p-4"><div class="font-medium">${c.name}</div><div class="text-sm text-gray-500">${c.phone || ''}</div></td><td class="p-4"><span class="font-mono text-lg font-bold ${c.visitCount>=3?'text-green-600':''}">${c.visitCount}</span></td><td class="p-4">${getStatusBadge(c)}</td><td class="p-4 font-medium text-purple-700">M${c.totalSpent.toFixed(2)}</td><td class="p-4 text-sm truncate max-w-[200px]">${c.lastService}</td><td class="p-4">${c.isAffiliate ? `<span class="affiliate-badge">Affiliate (${c.affiliateRate}%)</span>` : '<button data-id="' + c.id + '" class="makeAffiliateBtn text-indigo-600 text-sm hover:underline">Make Affiliate</button>'}</td><td class="p-4">${c.partnerName ? `<span class="partner-badge">Partner: ${c.partnerName}</span><button data-partner="${c.partnerId}" class="viewPartnerBtn text-emerald-600 text-sm hover:underline ml-2">View</button>` : '<button data-id="' + c.id + '" class="linkPartnerBtn text-teal-600 text-sm hover:underline">Link Partner</button>'}</td><td class="p-4 flex gap-2"><button data-id="${c.id}" class="viewHistory text-indigo-600 text-sm hover:underline">View →</button><button data-id="${c.id}" class="editClient text-gray-500 text-sm hover:underline">Edit</button>${c.isAffiliate ? `<button data-affiliate-id="${affiliatesList.find(a => a.client_id === c.id)?.id || ''}" class="viewAffiliate text-green-600 text-sm hover:underline ml-2">Affiliate Dashboard</button>` : ''}</td></tr>`).join('');
+                tbody.innerHTML = filtered.map(c => {
+                    const affiliateRecord = affiliatesList.find(a => a.client_id === c.id);
+                    const affiliateId = affiliateRecord?.id || null;
+                    return `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-4"><div class="font-medium">${c.name}</div><div class="text-sm text-gray-500">${c.phone || ''}</div></td>
+                        <td class="p-4"><span class="font-mono text-lg font-bold ${c.visitCount>=3?'text-green-600':''}">${c.visitCount}</span></td>
+                        <td class="p-4">${getStatusBadge(c)}</td>
+                        <td class="p-4 font-medium text-purple-700">M${c.totalSpent.toFixed(2)}</td>
+                        <td class="p-4 text-sm truncate max-w-[200px]">${c.lastService}</td>
+                        <td class="p-4">
+                            ${c.isAffiliate ? `<span class="affiliate-badge">Affiliate (${c.affiliateRate}%)</span>` : '<button data-id="' + c.id + '" class="makeAffiliateBtn text-indigo-600 text-sm hover:underline">Make Affiliate</button>'}
+                        </td>
+                        <td class="p-4">
+                            ${c.partnerName ? `<span class="partner-badge">${c.partnerName}</span>` : '<span class="text-gray-400 text-sm">—</span>'}
+                        </td>
+                        <td class="p-4 flex gap-2">
+                            <button data-id="${c.id}" class="viewHistory text-indigo-600 text-sm hover:underline">View →</button>
+                            <button data-id="${c.id}" class="editClient text-gray-500 text-sm hover:underline">Edit</button>
+                            ${c.isAffiliate && affiliateId ? `<button data-affiliate-id="${affiliateId}" class="viewAffiliate text-green-600 text-sm hover:underline">Affiliate Dashboard</button>` : ''}
+                        </td>
+                    </tr>`;
+                }).join('');
                 document.getElementById('totalClients').textContent = allClients.length;
                 document.querySelectorAll('.viewHistory').forEach(b => b.addEventListener('click', () => viewHistory(b.dataset.id)));
                 document.querySelectorAll('.editClient').forEach(b => b.addEventListener('click', () => openEditClient(b.dataset.id)));
                 document.querySelectorAll('.makeAffiliateBtn').forEach(b => b.addEventListener('click', () => openAffiliateSettings(b.dataset.id)));
-                document.querySelectorAll('.viewAffiliate').forEach(b => b.addEventListener('click', () => { const affId = b.dataset.affiliateId; if (affId) showAffiliateDashboard(affId); }));
-                document.querySelectorAll('.linkPartnerBtn').forEach(b => b.addEventListener('click', () => openLinkPartnerModal(b.dataset.id)));
-                document.querySelectorAll('.viewPartnerBtn').forEach(b => b.addEventListener('click', () => { const partnerId = b.dataset.partner; if (partnerId) showPartnerDashboard(partnerId); }));
+                document.querySelectorAll('.viewAffiliate').forEach(b => b.addEventListener('click', () => {
+                    const affId = b.dataset.affiliateId;
+                    if (affId) showAffiliateDashboard(affId);
+                }));
             }
 
-            async function openLinkPartnerModal(clientId) {
-                await loadPartners();
-                const clientSelect = document.getElementById('linkClientSelect');
-                const partnerSelect = document.getElementById('linkPartnerSelect');
-                if (!clientSelect || !partnerSelect) return;
-                clientSelect.innerHTML = allClients.filter(c => c.id == clientId).map(c => `<option value="${c.id}" selected>${c.name}</option>`).join('');
-                partnerSelect.innerHTML = '<option value="">-- Select Partner --</option>' + allPartners.map(p => `<option value="${p.id}">${p.name} (${p.commission_rate}%)</option>`).join('');
-                document.getElementById('linkClientForm').dataset.clientId = clientId;
-                openModal('linkClientToPartnerModal');
-            }
-
-            async function updateStats() {
+            function updateStats() {
                 document.getElementById('totalServices').textContent = allClients.reduce((s,c)=>s+c.visitCount,0);
                 document.getElementById('discountEligible').textContent = allClients.filter(c=>c.discountEligible).length;
                 document.getElementById('totalRevenue').textContent = `M${allClients.reduce((s,c)=>s+c.totalSpent,0).toFixed(2)}`;
@@ -599,7 +786,18 @@
                 if (!c) return;
                 document.getElementById('detailClientName').textContent = c.name + ' — History';
                 const content = document.getElementById('clientHistoryContent');
-                content.innerHTML = c.services.length ? c.services.map((s, idx) => { const visitNum = c.services.length - idx; const isDiscountVisit = visitNum % 3 === 0; return `<div class="border rounded p-4 ${isDiscountVisit ? 'bg-green-50 border-green-200' : ''} mb-2"><div class="flex justify-between items-start"><div><span class="font-medium">${s.service_name}</span>${isDiscountVisit ? '<span class="ml-2 bg-green-200 text-green-800 text-xs px-2 py-0.5 rounded">20% discount visit</span>' : ''}</div><span class="font-bold">M${parseFloat(s.amount).toFixed(2)}</span></div><div class="text-sm text-gray-500 mt-1">Visit #${visitNum} · ${new Date(s.created_at).toLocaleDateString()}</div>${s.notes ? `<div class="text-sm text-gray-400 mt-1">${s.notes}</div>` : ''}</div>`; }).join('') + `<div class="mt-4 pt-4 border-t font-bold text-right">Total: M${c.totalSpent.toFixed(2)}</div>` : '<p class="text-center py-8 text-gray-500">No services yet</p>';
+                content.innerHTML = c.services.length ? c.services.map((s, idx) => {
+                    const visitNum = c.services.length - idx;
+                    const isDiscountVisit = visitNum % 3 === 0;
+                    return `<div class="border rounded p-4 ${isDiscountVisit ? 'bg-green-50 border-green-200' : ''} mb-2">
+                        <div class="flex justify-between items-start">
+                            <div><span class="font-medium">${s.service_name}</span>${isDiscountVisit ? '<span class="ml-2 bg-green-200 text-green-800 text-xs px-2 py-0.5 rounded">20% discount visit</span>' : ''}</div>
+                            <span class="font-bold">M${parseFloat(s.amount).toFixed(2)}</span>
+                        </div>
+                        <div class="text-sm text-gray-500 mt-1">Visit #${visitNum} · ${new Date(s.created_at).toLocaleDateString()}</div>
+                        ${s.notes ? `<div class="text-sm text-gray-400 mt-1">${s.notes}</div>` : ''}
+                    </div>`;
+                }).join('') + `<div class="mt-4 pt-4 border-t font-bold text-right">Total: M${c.totalSpent.toFixed(2)}</div>` : '<p class="text-center py-8 text-gray-500">No services yet</p>';
                 openModal('clientDetailModal');
             }
 
@@ -620,7 +818,7 @@
                 if (!name) return alert('Name is required');
                 await supabaseClient.from('clients').update({ name, phone: document.getElementById('editClientPhone').value.trim() || null, email: document.getElementById('editClientEmail').value.trim() || null }).eq('id', id);
                 closeModal('editClientModal');
-                await loadAllData();
+                loadAllData();
                 alert('Client updated successfully');
             });
 
@@ -629,56 +827,100 @@
                 const clientId = document.getElementById('affiliateClientId').value;
                 const rate = parseFloat(document.getElementById('affiliateRate').value);
                 const { data: existing } = await supabaseClient.from('affiliates').select('*').eq('client_id', clientId).single();
-                if (existing) await supabaseClient.from('affiliates').update({ commission_rate: rate }).eq('client_id', clientId);
-                else await supabaseClient.from('affiliates').insert([{ client_id: clientId, commission_rate: rate }]);
+                if (existing) {
+                    await supabaseClient.from('affiliates').update({ commission_rate: rate }).eq('client_id', clientId);
+                } else {
+                    await supabaseClient.from('affiliates').insert([{ client_id: clientId, commission_rate: rate }]);
+                }
                 closeModal('affiliateSettingsModal');
-                await loadAllData();
-                await loadAffiliatesDropdown();
+                loadAllData();
+                loadAffiliatesDropdown();
                 alert('Affiliate saved successfully');
-            });
-
-            document.getElementById('btnAddPartner').addEventListener('click', () => openModal('addPartnerModal'));
-            document.getElementById('btnViewPartners').addEventListener('click', viewPartnersList);
-            document.getElementById('cancelAddPartner').addEventListener('click', () => closeModal('addPartnerModal'));
-            document.getElementById('closeViewPartners').addEventListener('click', () => closeModal('viewPartnersModal'));
-            document.getElementById('closePartnerDashboard').addEventListener('click', () => closeModal('partnerDashboardModal'));
-
-            document.getElementById('addPartnerForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const partnerData = { name: document.getElementById('partnerName').value.trim(), phone: document.getElementById('partnerPhone').value.trim(), email: document.getElementById('partnerEmail').value.trim(), rate: parseFloat(document.getElementById('partnerRate').value), mobileMoney: document.getElementById('partnerMobileMoney').value.trim(), notes: document.getElementById('partnerNotes').value };
-                if (!partnerData.name) return alert('Partner name required');
-                try { await addPartner(partnerData); alert('Partner added successfully'); closeModal('addPartnerModal'); document.getElementById('addPartnerForm').reset(); await loadPartners(); await loadPartnerDropdowns(); } catch(error) { alert('Error: ' + error.message); }
             });
 
             document.getElementById('btnDownload').addEventListener('click', () => {
                 if (!allClients.length) { alert('No data to export'); return; }
                 const wb = XLSX.utils.book_new();
                 const clientRows = [['Name', 'Phone', 'Email', 'Total Visits', 'Total Spent (M)', 'Last Service', 'Is Affiliate', 'Commission Rate', 'External Partner', 'Registered']];
-                allClients.forEach(c => { clientRows.push([c.name, c.phone || '', c.email || '', c.visitCount, c.totalSpent.toFixed(2), c.lastService, c.isAffiliate ? 'Yes' : 'No', c.affiliateRate ? `${c.affiliateRate}%` : '', c.partnerName || '', new Date(c.created_at).toLocaleDateString()]); });
-                const ws1 = XLSX.utils.aoa_to_sheet(clientRows); XLSX.utils.book_append_sheet(wb, ws1, 'Client Directory');
+                allClients.forEach(c => {
+                    clientRows.push([c.name, c.phone || '', c.email || '', c.visitCount, c.totalSpent.toFixed(2), c.lastService, c.isAffiliate ? 'Yes' : 'No', c.affiliateRate ? `${c.affiliateRate}%` : '', c.partnerName || '', new Date(c.created_at).toLocaleDateString()]);
+                });
+                const ws1 = XLSX.utils.aoa_to_sheet(clientRows);
+                XLSX.utils.book_append_sheet(wb, ws1, 'Client Directory');
                 const txRows = [['Client Name', 'Phone', 'Service', 'Amount (M)', 'Discounted', 'Notes', 'Date']];
-                allClients.forEach(c => { const sorted = [...c.services].reverse(); sorted.forEach((s, idx) => { const visitNum = idx + 1; txRows.push([c.name, c.phone || '', s.service_name, parseFloat(s.amount).toFixed(2), visitNum % 3 === 0 ? 'Yes (20%)' : 'No', s.notes || '', new Date(s.created_at).toLocaleDateString()]); }); });
-                const ws2 = XLSX.utils.aoa_to_sheet(txRows); XLSX.utils.book_append_sheet(wb, ws2, 'Transaction History');
+                allClients.forEach(c => {
+                    const sorted = [...c.services].reverse();
+                    sorted.forEach((s, idx) => {
+                        const visitNum = idx + 1;
+                        txRows.push([c.name, c.phone || '', s.service_name, parseFloat(s.amount).toFixed(2), visitNum % 3 === 0 ? 'Yes (20%)' : 'No', s.notes || '', new Date(s.created_at).toLocaleDateString()]);
+                    });
+                });
+                const ws2 = XLSX.utils.aoa_to_sheet(txRows);
+                XLSX.utils.book_append_sheet(wb, ws2, 'Transaction History');
                 XLSX.writeFile(wb, `Cre8Learn_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
             });
 
+            // Event Listeners
             document.getElementById('btnNewClient').addEventListener('click', () => openModal('newClientModal'));
             document.getElementById('btnLogService').addEventListener('click', () => { loadDropdown(); openModal('logServiceModal'); });
+            document.getElementById('btnAddPartner').addEventListener('click', () => openModal('addPartnerModal'));
+            document.getElementById('btnViewPartners').addEventListener('click', viewPartnersList);
             document.getElementById('cancelNewClient').addEventListener('click', () => closeModal('newClientModal'));
             document.getElementById('cancelLogService').addEventListener('click', () => closeModal('logServiceModal'));
             document.getElementById('cancelEditClient').addEventListener('click', () => closeModal('editClientModal'));
             document.getElementById('cancelAffiliateSettings').addEventListener('click', () => closeModal('affiliateSettingsModal'));
             document.getElementById('closeAffiliateDashboard').addEventListener('click', () => closeModal('affiliateDashboardModal'));
+            document.getElementById('closePartnerDashboard').addEventListener('click', () => closeModal('partnerDashboardModal'));
             document.getElementById('cancelMarkPaid').addEventListener('click', () => closeModal('markPaidModal'));
             document.getElementById('closeDetailModal').addEventListener('click', () => closeModal('clientDetailModal'));
+            document.getElementById('cancelAddPartner').addEventListener('click', () => closeModal('addPartnerModal'));
+            document.getElementById('closeViewPartners').addEventListener('click', () => closeModal('viewPartnersModal'));
+            
             document.getElementById('searchInput').addEventListener('keyup', (e) => renderTable(e.target.value));
             
-            document.getElementById('tabTechnical').addEventListener('click', () => { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.getElementById('tabTechnical').classList.add('active'); document.getElementById('technicalTab').classList.add('active'); });
-            document.getElementById('tabProfessional').addEventListener('click', () => { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.getElementById('tabProfessional').classList.add('active'); document.getElementById('professionalTab').classList.add('active'); });
+            document.getElementById('tabTechnical').addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById('tabTechnical').classList.add('active');
+                document.getElementById('technicalTab').classList.add('active');
+            });
             
-            document.querySelectorAll('input[name="service"]').forEach(r => { r.addEventListener('change', (e) => { const client = allClients.find(c => c.id === document.getElementById('serviceClientSelect').value); const basePrice = parseFloat(e.target.dataset.price); if (client && nextVisitIsDiscounted(client.visitCount)) document.getElementById('serviceAmount').value = (basePrice * 0.8).toFixed(2); else document.getElementById('serviceAmount').value = basePrice; }); });
+            document.getElementById('tabProfessional').addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById('tabProfessional').classList.add('active');
+                document.getElementById('professionalTab').classList.add('active');
+            });
             
-            document.getElementById('serviceClientSelect').addEventListener('change', () => { const c = allClients.find(x => x.id === document.getElementById('serviceClientSelect').value); const willDiscount = c && nextVisitIsDiscounted(c.visitCount); document.getElementById('discountNotice').classList.toggle('hidden', !willDiscount); const checkedService = document.querySelector('input[name="service"]:checked'); if (checkedService) { const base = parseFloat(checkedService.dataset.price); document.getElementById('serviceAmount').value = willDiscount ? (base * 0.8).toFixed(2) : base; } });
+            document.querySelectorAll('input[name="service"]').forEach(r => {
+                r.addEventListener('change', (e) => {
+                    const client = allClients.find(c => c.id === document.getElementById('serviceClientSelect').value);
+                    const basePrice = parseFloat(e.target.dataset.price);
+                    if (client && nextVisitIsDiscounted(client.visitCount)) {
+                        document.getElementById('serviceAmount').value = (basePrice * 0.8).toFixed(2);
+                    } else {
+                        document.getElementById('serviceAmount').value = basePrice;
+                    }
+                });
+            });
+            
+            document.getElementById('serviceClientSelect').addEventListener('change', () => {
+                const c = allClients.find(x => x.id === document.getElementById('serviceClientSelect').value);
+                const willDiscount = c && nextVisitIsDiscounted(c.visitCount);
+                document.getElementById('discountNotice').classList.toggle('hidden', !willDiscount);
+                const checkedService = document.querySelector('input[name="service"]:checked');
+                if (checkedService) {
+                    const base = parseFloat(checkedService.dataset.price);
+                    document.getElementById('serviceAmount').value = willDiscount ? (base * 0.8).toFixed(2) : base;
+                }
+            });
+            
+            document.getElementById('addPartnerForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const partnerData = { name: document.getElementById('partnerName').value.trim(), phone: document.getElementById('partnerPhone').value.trim(), email: document.getElementById('partnerEmail').value.trim(), rate: parseFloat(document.getElementById('partnerRate').value), mobileMoney: document.getElementById('partnerMobileMoney').value.trim(), notes: document.getElementById('partnerNotes').value };
+                if (!partnerData.name) return alert('Partner name required');
+                try { await addPartner(partnerData); alert('Partner added successfully'); closeModal('addPartnerModal'); document.getElementById('addPartnerForm').reset(); loadPartners(); loadPartnerDropdowns(); } catch(error) { alert('Error: ' + error.message); }
+            });
             
             document.getElementById('newClientForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -689,8 +931,8 @@
                 await supabaseClient.from('clients').insert([{ name, phone: document.getElementById('clientPhone').value.trim() || null, email: document.getElementById('clientEmail').value.trim() || null, referred_by_affiliate_id: referredByAffiliateId ? parseInt(referredByAffiliateId) : null, external_referral_partner_id: externalPartnerId ? parseInt(externalPartnerId) : null }]);
                 closeModal('newClientModal');
                 document.getElementById('newClientForm').reset();
-                await loadAllData();
-                await loadAffiliatesDropdown();
+                loadAllData();
+                loadAffiliatesDropdown();
                 alert('Client added');
             });
             
@@ -698,48 +940,70 @@
                 e.preventDefault();
                 const clientId = document.getElementById('serviceClientSelect').value;
                 const service = document.querySelector('input[name="service"]:checked');
-                if (!clientId || !service) return alert('Select client and service');
+                if (!clientId) return alert('Select client');
+                if (!service) return alert('Select service');
+                
                 const client = allClients.find(c => c.id === clientId);
                 const currentVisits = client?.visitCount || 0;
                 const discounted = nextVisitIsDiscounted(currentVisits);
                 const basePrice = parseFloat(service.dataset.price);
                 let amount = parseFloat(document.getElementById('serviceAmount').value) || basePrice;
                 if (discounted && amount === basePrice) amount = basePrice * 0.8;
+                
                 const { data: serviceData } = await supabaseClient.from('services').insert([{ client_id: clientId, service_name: service.value, amount, discounted, notes: document.getElementById('serviceNotes').value || null }]).select();
+                
+                // Check if client was referred by an affiliate (YOUR ORIGINAL CODE)
                 const { data: clientData } = await supabaseClient.from('clients').select('referred_by_affiliate_id, external_referral_partner_id').eq('id', clientId).single();
                 if (clientData?.referred_by_affiliate_id) {
                     const affiliate = affiliatesList.find(a => a.id === clientData.referred_by_affiliate_id);
-                    if (affiliate && serviceData?.[0]) { const commissionAmount = amount * (affiliate.commission_rate / 100); await supabaseClient.from('referrals').insert([{ referring_affiliate_id: affiliate.id, referred_client_id: clientId, service_id: serviceData[0].id, service_name: service.value, commission_amount: commissionAmount, commission_rate: affiliate.commission_rate, commission_paid: false, status: 'pending' }]); }
+                    if (affiliate && serviceData?.[0]) {
+                        const commissionAmount = amount * (affiliate.commission_rate / 100);
+                        await supabaseClient.from('referrals').insert([{
+                            referring_affiliate_id: affiliate.id,
+                            referred_client_id: clientId,
+                            service_id: serviceData[0].id,
+                            service_name: service.value,
+                            commission_amount: commissionAmount,
+                            commission_rate: affiliate.commission_rate,
+                            commission_paid: false,
+                            status: 'pending'
+                        }]);
+                    }
                 }
+                
+                // NEW: Check if client has an external partner referral
                 if (clientData?.external_referral_partner_id && serviceData?.[0]) {
                     const partner = allPartners.find(p => p.id === clientData.external_referral_partner_id);
-                    if (partner) { const commissionAmount = amount * (partner.commission_rate / 100); await supabaseClient.from('external_referrals').insert([{ partner_id: partner.id, client_id: clientId, service_id: serviceData[0].id, service_name: service.value, commission_amount: commissionAmount, commission_rate: partner.commission_rate, commission_paid: false }]); await supabaseClient.from('affiliates_partners').update({ total_earned: (partner.total_earned || 0) + commissionAmount }).eq('id', partner.id); }
+                    if (partner) {
+                        const commissionAmount = amount * (partner.commission_rate / 100);
+                        await supabaseClient.from('external_referrals').insert([{
+                            partner_id: partner.id,
+                            client_id: clientId,
+                            service_id: serviceData[0].id,
+                            service_name: service.value,
+                            commission_amount: commissionAmount,
+                            commission_rate: partner.commission_rate,
+                            commission_paid: false
+                        }]);
+                        // Update partner's total earned
+                        const { data: partnerUpdate } = await supabaseClient.from('affiliates_partners').select('total_earned').eq('id', partner.id).single();
+                        await supabaseClient.from('affiliates_partners').update({ total_earned: (partnerUpdate?.total_earned || 0) + commissionAmount }).eq('id', partner.id);
+                    }
                 }
+                
                 closeModal('logServiceModal');
                 document.getElementById('logServiceForm').reset();
                 document.getElementById('discountNotice').classList.add('hidden');
-                await loadAllData();
+                loadAllData();
+                
                 const newVisits = currentVisits + 1;
                 if (newVisits % 3 === 0) alert(`✅ 20% discount applied! Visit #${newVisits} for ${client.name}.`);
-                else alert('Service logged.');
+                else alert(`Service logged.`);
             });
             
             document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('active'); }));
             document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active')); });
             
-            const linkClientForm = document.getElementById('linkClientForm');
-            if (linkClientForm) {
-                linkClientForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const clientId = e.target.dataset.clientId || document.getElementById('linkClientSelect').value;
-                    const partnerId = document.getElementById('linkPartnerSelect').value;
-                    if (!partnerId) return alert('Select a partner');
-                    await supabaseClient.from('clients').update({ external_referral_partner_id: parseInt(partnerId) }).eq('id', clientId);
-                    closeModal('linkClientToPartnerModal');
-                    await loadAllData();
-                    alert('Client linked to partner successfully');
-                });
-            }
         });
     </script>
 </body>
