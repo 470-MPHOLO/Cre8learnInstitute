@@ -16,6 +16,23 @@
         .tab-content.active { display: block; }
         #loginScreen { display: flex; }
         #mainApp { display: none; }
+        .affiliate-badge {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .commission-paid {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .commission-pending {
+            background: #fed7aa;
+            color: #9b3412;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
@@ -119,11 +136,12 @@
                                 <th class="p-4 font-semibold text-gray-600">Status</th>
                                 <th class="p-4 font-semibold text-gray-600">Total Spent</th>
                                 <th class="p-4 font-semibold text-gray-600">Last Service</th>
+                                <th class="p-4 font-semibold text-gray-600">Affiliate</th>
                                 <th class="p-4 font-semibold text-gray-600"></th>
                             </tr>
                         </thead>
                         <tbody id="clientTableBody">
-                            <tr><td colspan="6" class="p-8 text-center text-gray-400">Loading...</td></tr>
+                            <tr><td colspan="7" class="p-8 text-center text-gray-400">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -140,6 +158,12 @@
                     <input type="text" id="clientName" placeholder="Full Name" required class="w-full p-3 border rounded-lg mb-3">
                     <input type="text" id="clientPhone" placeholder="Phone Number" class="w-full p-3 border rounded-lg mb-3">
                     <input type="email" id="clientEmail" placeholder="Email (optional)" class="w-full p-3 border rounded-lg mb-4">
+                    
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Referred By (Affiliate)</label>
+                    <select id="referredBy" class="w-full p-3 border rounded-lg mb-4">
+                        <option value="">-- No referral / Direct --</option>
+                    </select>
+                    
                     <div class="flex gap-3">
                         <button type="submit" class="bg-indigo-600 text-white px-4 py-3 rounded-lg flex-1">Register</button>
                         <button type="button" id="cancelNewClient" class="bg-gray-200 px-4 py-3 rounded-lg flex-1">Cancel</button>
@@ -165,6 +189,58 @@
                     <div class="flex gap-3">
                         <button type="submit" class="bg-indigo-600 text-white px-4 py-3 rounded-lg flex-1">Save Changes</button>
                         <button type="button" id="cancelEditClient" class="bg-gray-200 px-4 py-3 rounded-lg flex-1">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Affiliate Settings Modal -->
+    <div id="affiliateSettingsModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div class="p-6">
+                <h3 class="text-xl font-bold mb-4">Affiliate Settings</h3>
+                <form id="affiliateSettingsForm">
+                    <input type="hidden" id="affiliateClientId">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Commission Rate (%)</label>
+                    <input type="number" id="affiliateRate" step="0.5" placeholder="10" class="w-full p-3 border rounded-lg mb-4">
+                    <div class="flex gap-3">
+                        <button type="submit" class="bg-indigo-600 text-white px-4 py-3 rounded-lg flex-1">Save</button>
+                        <button type="button" id="cancelAffiliateSettings" class="bg-gray-200 px-4 py-3 rounded-lg flex-1">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Affiliate Dashboard Modal -->
+    <div id="affiliateDashboardModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[80vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-xl font-bold" id="affiliateDashboardTitle">Affiliate Dashboard</h3>
+                    <button id="closeAffiliateDashboard" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                </div>
+                <div id="affiliateDashboardContent">
+                    <p class="text-gray-500">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mark Commission Paid Modal -->
+    <div id="markPaidModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div class="p-6">
+                <h3 class="text-xl font-bold mb-4">Mark Commission as Paid</h3>
+                <form id="markPaidForm">
+                    <input type="hidden" id="markReferralId">
+                    <p class="mb-4 text-gray-600">Confirm that you have paid this commission to the affiliate.</p>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Notes (Optional)</label>
+                    <input type="text" id="paymentNotes" placeholder="e.g., Paid via M-Pesa, Cash, etc." class="w-full p-3 border rounded-lg mb-4">
+                    <div class="flex gap-3">
+                        <button type="submit" class="bg-green-600 text-white px-4 py-3 rounded-lg flex-1">Confirm Payment</button>
+                        <button type="button" id="cancelMarkPaid" class="bg-gray-200 px-4 py-3 rounded-lg flex-1">Cancel</button>
                     </div>
                 </form>
             </div>
@@ -281,11 +357,10 @@
             
             const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             let allClients = [];
+            let affiliatesList = [];
             let isLoggedIn = false;
 
             // ── Discount logic: discount on every visit that is a multiple of 3
-            // (3rd, 6th, 9th, …). The NEXT visit gets the discount when
-            // currentVisitCount % 3 === 2  (i.e. this new visit will be the 3rd, 6th, …)
             function nextVisitIsDiscounted(currentVisitCount) {
                 return (currentVisitCount + 1) % 3 === 0;
             }
@@ -300,6 +375,7 @@
                 isLoggedIn = true;
                 sessionStorage.setItem('cre8learn_logged_in', 'true');
                 loadAllData();
+                loadAffiliatesDropdown();
             }
 
             function logout() {
@@ -333,19 +409,171 @@
             function openModal(id) { if (isLoggedIn) document.getElementById(id).classList.add('active'); }
             function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
+            // ── Affiliate Functions ──
+            async function loadAffiliatesDropdown() {
+                const { data, error } = await supabaseClient
+                    .from('affiliates')
+                    .select('id, client_id, commission_rate');
+                if (error) return;
+                
+                const affiliateData = [];
+                for (const aff of data) {
+                    const { data: client } = await supabaseClient
+                        .from('clients')
+                        .select('name')
+                        .eq('id', aff.client_id)
+                        .single();
+                    affiliateData.push({
+                        id: aff.id,
+                        client_id: aff.client_id,
+                        name: client?.name || 'Unknown',
+                        commission_rate: aff.commission_rate
+                    });
+                }
+                affiliatesList = affiliateData;
+                
+                const referredBySelect = document.getElementById('referredBy');
+                if (referredBySelect) {
+                    referredBySelect.innerHTML = '<option value="">-- No referral / Direct --</option>' +
+                        affiliatesList.map(a => `<option value="${a.id}">${a.name} (${a.commission_rate}%)</option>`).join('');
+                }
+            }
+
+            async function openAffiliateSettings(clientId) {
+                const { data: existing } = await supabaseClient
+                    .from('affiliates')
+                    .select('*')
+                    .eq('client_id', clientId)
+                    .single();
+                
+                document.getElementById('affiliateClientId').value = clientId;
+                document.getElementById('affiliateRate').value = existing?.commission_rate || 10;
+                openModal('affiliateSettingsModal');
+            }
+
+            async function showAffiliateDashboard(affiliateId) {
+                const affiliate = affiliatesList.find(a => a.id == affiliateId);
+                if (!affiliate) return;
+                
+                document.getElementById('affiliateDashboardTitle').textContent = `${affiliate.name} - Affiliate Dashboard`;
+                
+                const { data: referrals } = await supabaseClient
+                    .from('referrals')
+                    .select(`*, referred_client:referred_client_id(*)`)
+                    .eq('referring_affiliate_id', affiliateId)
+                    .order('created_at', { ascending: false });
+                
+                const totalEarned = (referrals || []).reduce((sum, r) => sum + parseFloat(r.commission_amount), 0);
+                const totalPaid = (referrals || []).filter(r => r.commission_paid === true).reduce((sum, r) => sum + parseFloat(r.commission_amount), 0);
+                const pendingAmount = totalEarned - totalPaid;
+                
+                let html = `
+                    <div class="grid grid-cols-3 gap-4 mb-6">
+                        <div class="bg-indigo-50 p-4 rounded-xl text-center">
+                            <div class="text-2xl font-bold text-indigo-700">M${totalEarned.toFixed(2)}</div>
+                            <div class="text-sm text-gray-600">Total Earned</div>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-xl text-center">
+                            <div class="text-2xl font-bold text-green-700">M${totalPaid.toFixed(2)}</div>
+                            <div class="text-sm text-gray-600">Paid</div>
+                        </div>
+                        <div class="bg-yellow-50 p-4 rounded-xl text-center">
+                            <div class="text-2xl font-bold text-yellow-700">M${pendingAmount.toFixed(2)}</div>
+                            <div class="text-sm text-gray-600">Pending</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-semibold">Referral History</h4>
+                        <button id="markMultiplePaidBtn" data-affiliate="${affiliateId}" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">Mark Selected as Paid</button>
+                    </div>
+                    
+                    <div class="space-y-2 max-h-96 overflow-y-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr><th class="p-2 text-left"><input type="checkbox" id="selectAllReferrals"></th><th class="p-2 text-left">Client</th><th class="p-2 text-left">Service</th><th class="p-2 text-right">Amount</th><th class="p-2 text-left">Status</th><th class="p-2 text-left">Action</th></tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                if (!referrals || referrals.length === 0) {
+                    html += '<tr><td colspan="6" class="text-center py-4 text-gray-500">No referrals yet</td></tr>';
+                } else {
+                    referrals.forEach(r => {
+                        const statusText = r.commission_paid ? 'Paid' : 'Pending';
+                        const statusColor = r.commission_paid ? 'text-green-600' : 'text-yellow-600';
+                        html += `
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="p-2"><input type="checkbox" class="referralCheckbox" data-id="${r.id}" ${r.commission_paid ? 'disabled' : ''}></td>
+                                <td class="p-2">${r.referred_client?.name || 'Unknown'}</td>
+                                <td class="p-2">${r.service_name || '-'}</td>
+                                <td class="p-2 text-right font-medium">M${parseFloat(r.commission_amount).toFixed(2)}</td>
+                                <td class="p-2"><span class="${statusColor}">${statusText}</span></td>
+                                <td class="p-2">${!r.commission_paid ? `<button onclick="markSingleCommissionAsPaid(${r.id})" class="text-green-600 text-sm hover:underline">Mark Paid</button>` : '-'}</td>
+                            </tr>
+                        `;
+                    });
+                }
+                
+                html += `</tbody></table></div>`;
+                document.getElementById('affiliateDashboardContent').innerHTML = html;
+                openModal('affiliateDashboardModal');
+                
+                document.getElementById('selectAllReferrals')?.addEventListener('change', (e) => {
+                    document.querySelectorAll('.referralCheckbox:not(:disabled)').forEach(cb => cb.checked = e.target.checked);
+                });
+                
+                document.getElementById('markMultiplePaidBtn')?.addEventListener('click', async () => {
+                    const selectedIds = [];
+                    document.querySelectorAll('.referralCheckbox:checked').forEach(cb => {
+                        if (cb.dataset.id) selectedIds.push(parseInt(cb.dataset.id));
+                    });
+                    if (selectedIds.length === 0) { alert('Select at least one referral to mark as paid.'); return; }
+                    if (confirm(`Mark ${selectedIds.length} commission(s) as paid?`)) {
+                        for (const id of selectedIds) await markCommissionAsPaid(id);
+                        showAffiliateDashboard(affiliateId);
+                    }
+                });
+            }
+
+            async function markCommissionAsPaid(referralId, paymentNotes = '') {
+                const { error } = await supabaseClient
+                    .from('referrals')
+                    .update({ commission_paid: true, paid_at: new Date().toISOString(), status: 'paid', notes: paymentNotes || null })
+                    .eq('id', referralId);
+                if (error) { console.error(error); return false; }
+                return true;
+            }
+
+            window.markSingleCommissionAsPaid = function(referralId) {
+                const notes = prompt('Enter payment notes (e.g., Paid via M-Pesa, Reference #):');
+                if (notes !== null) {
+                    markCommissionAsPaid(referralId, notes).then(() => {
+                        const currentAffiliateId = document.querySelector('#markMultiplePaidBtn')?.dataset.affiliate;
+                        if (currentAffiliateId) showAffiliateDashboard(currentAffiliateId);
+                    });
+                }
+            };
+
             async function loadAllData() {
                 if (!isLoggedIn) return;
                 const { data: clients, error } = await supabaseClient.from('clients').select('*').order('created_at', { ascending: false });
                 if (error) { console.error(error); return; }
                 if (!clients?.length) { allClients = []; renderTable(); updateStats(); return; }
                 
+                // Get affiliate info for each client
+                const { data: affiliates } = await supabaseClient.from('affiliates').select('*');
+                const affiliateMap = new Map();
+                affiliates?.forEach(a => affiliateMap.set(a.client_id, a));
+                
                 const enriched = await Promise.all(clients.map(async (c) => {
                     const { data: svc } = await supabaseClient.from('services').select('*').eq('client_id', c.id).order('created_at', { ascending: false });
                     const count = svc?.length || 0;
                     const spent = svc?.reduce((s, x) => s + parseFloat(x.amount || 0), 0) || 0;
-                    // Has ever had at least one discounted visit (multiple of 3)
                     const hasHadDiscount = count >= 3;
-                    return { ...c, visitCount: count, totalSpent: spent, lastService: svc?.[0]?.service_name || '—', discountEligible: hasHadDiscount, services: svc || [] };
+                    const isAffiliate = affiliateMap.has(c.id);
+                    const affiliateInfo = affiliateMap.get(c.id);
+                    return { ...c, visitCount: count, totalSpent: spent, lastService: svc?.[0]?.service_name || '—', discountEligible: hasHadDiscount, services: svc || [], isAffiliate, affiliateRate: affiliateInfo?.commission_rate || null };
                 }));
                 allClients = enriched;
                 renderTable();
@@ -361,24 +589,19 @@
             function getStatusBadge(c) {
                 const v = c.visitCount;
                 if (v >= 3) {
-                    // Show VIP + next discount info
                     const nextDiscountVisit = Math.ceil((v + 1) / 3) * 3;
                     const visitsUntilNext = nextDiscountVisit - v;
-                    if (visitsUntilNext === 1) {
-                        return '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">VIP — Next visit: 20% off</span>';
-                    }
+                    if (visitsUntilNext === 1) return '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">VIP — Next visit: 20% off</span>';
                     return `<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">VIP — ${visitsUntilNext} to next discount</span>`;
                 }
                 const toFirstDiscount = 3 - v;
-                if (toFirstDiscount === 1) {
-                    return '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">Next visit: 20% off!</span>';
-                }
+                if (toFirstDiscount === 1) return '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">Next visit: 20% off!</span>';
                 return `<span class="bg-gray-100 px-2 py-1 rounded text-xs">${toFirstDiscount} visits to discount</span>`;
             }
 
             function renderTable(filter = '') {
                 const tbody = document.getElementById('clientTableBody');
-                if (!allClients.length) { tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center">No clients</td></tr>'; return; }
+                if (!allClients.length) { tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center">No clients</td></tr>'; return; }
                 const filtered = allClients.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()));
                 tbody.innerHTML = filtered.map(c => `
                     <tr class="border-b hover:bg-gray-50">
@@ -387,15 +610,24 @@
                         <td class="p-4">${getStatusBadge(c)}</td>
                         <td class="p-4 font-medium text-purple-700">M${c.totalSpent.toFixed(2)}</td>
                         <td class="p-4 text-sm truncate max-w-[200px]">${c.lastService}</td>
+                        <td class="p-4">
+                            ${c.isAffiliate ? `<span class="affiliate-badge">Affiliate (${c.affiliateRate}%)</span>` : '<button data-id="${c.id}" class="makeAffiliateBtn text-indigo-600 text-sm hover:underline">Make Affiliate</button>'}
+                        </td>
                         <td class="p-4 flex gap-2">
                             <button data-id="${c.id}" class="viewHistory text-indigo-600 text-sm hover:underline">View →</button>
                             <button data-id="${c.id}" class="editClient text-gray-500 text-sm hover:underline">Edit</button>
+                            ${c.isAffiliate ? `<button data-affiliate-id="${c.isAffiliate === true ? affiliatesList.find(a => a.client_id === c.id)?.id : ''}" class="viewAffiliate text-green-600 text-sm hover:underline">Affiliate Dashboard</button>` : ''}
                         </td>
                     </tr>
                 `).join('');
                 document.getElementById('totalClients').textContent = allClients.length;
                 document.querySelectorAll('.viewHistory').forEach(b => b.addEventListener('click', () => viewHistory(b.dataset.id)));
                 document.querySelectorAll('.editClient').forEach(b => b.addEventListener('click', () => openEditClient(b.dataset.id)));
+                document.querySelectorAll('.makeAffiliateBtn').forEach(b => b.addEventListener('click', () => openAffiliateSettings(b.dataset.id)));
+                document.querySelectorAll('.viewAffiliate').forEach(b => b.addEventListener('click', () => {
+                    const affId = b.dataset.affiliateId;
+                    if (affId) showAffiliateDashboard(affId);
+                }));
             }
 
             function updateStats() {
@@ -410,16 +642,11 @@
                 document.getElementById('detailClientName').textContent = c.name + ' — History';
                 const content = document.getElementById('clientHistoryContent');
                 content.innerHTML = c.services.length ? c.services.map((s, idx) => {
-                    // Service number in reverse (oldest first numbering)
                     const visitNum = c.services.length - idx;
                     const isDiscountVisit = visitNum % 3 === 0;
-                    return `
-                    <div class="border rounded p-4 ${isDiscountVisit ? 'bg-green-50 border-green-200' : ''} mb-2">
+                    return `<div class="border rounded p-4 ${isDiscountVisit ? 'bg-green-50 border-green-200' : ''} mb-2">
                         <div class="flex justify-between items-start">
-                            <div>
-                                <span class="font-medium">${s.service_name}</span>
-                                ${isDiscountVisit ? '<span class="ml-2 bg-green-200 text-green-800 text-xs px-2 py-0.5 rounded">20% discount visit</span>' : ''}
-                            </div>
+                            <div><span class="font-medium">${s.service_name}</span>${isDiscountVisit ? '<span class="ml-2 bg-green-200 text-green-800 text-xs px-2 py-0.5 rounded">20% discount visit</span>' : ''}</div>
                             <span class="font-bold">M${parseFloat(s.amount).toFixed(2)}</span>
                         </div>
                         <div class="text-sm text-gray-500 mt-1">Visit #${visitNum} · ${new Date(s.created_at).toLocaleDateString()}</div>
@@ -429,7 +656,6 @@
                 openModal('clientDetailModal');
             }
 
-            // ── Edit Client ──
             function openEditClient(id) {
                 const c = allClients.find(x => x.id === id);
                 if (!c) return;
@@ -445,71 +671,59 @@
                 const id = document.getElementById('editClientId').value;
                 const name = document.getElementById('editClientName').value.trim();
                 if (!name) return alert('Name is required');
-                const { error } = await supabaseClient.from('clients').update({
-                    name,
-                    phone: document.getElementById('editClientPhone').value.trim() || null,
-                    email: document.getElementById('editClientEmail').value.trim() || null
-                }).eq('id', id);
-                if (error) { alert('Error saving changes'); return; }
+                await supabaseClient.from('clients').update({ name, phone: document.getElementById('editClientPhone').value.trim() || null, email: document.getElementById('editClientEmail').value.trim() || null }).eq('id', id);
                 closeModal('editClientModal');
                 loadAllData();
                 alert('Client updated successfully');
             });
 
-            // ── Download Spreadsheet ──
+            document.getElementById('affiliateSettingsForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const clientId = document.getElementById('affiliateClientId').value;
+                const rate = parseFloat(document.getElementById('affiliateRate').value);
+                const { data: existing } = await supabaseClient.from('affiliates').select('*').eq('client_id', clientId).single();
+                if (existing) {
+                    await supabaseClient.from('affiliates').update({ commission_rate: rate }).eq('client_id', clientId);
+                } else {
+                    await supabaseClient.from('affiliates').insert([{ client_id: clientId, commission_rate: rate }]);
+                }
+                closeModal('affiliateSettingsModal');
+                loadAllData();
+                loadAffiliatesDropdown();
+                alert('Affiliate saved successfully');
+            });
+
             document.getElementById('btnDownload').addEventListener('click', () => {
                 if (!allClients.length) { alert('No data to export'); return; }
-
                 const wb = XLSX.utils.book_new();
-
-                // Sheet 1: Client Summary
-                const clientRows = [['Name', 'Phone', 'Email', 'Total Visits', 'Total Spent (M)', 'Last Service', 'Registered']];
+                const clientRows = [['Name', 'Phone', 'Email', 'Total Visits', 'Total Spent (M)', 'Last Service', 'Is Affiliate', 'Commission Rate', 'Registered']];
                 allClients.forEach(c => {
-                    clientRows.push([
-                        c.name,
-                        c.phone || '',
-                        c.email || '',
-                        c.visitCount,
-                        c.totalSpent.toFixed(2),
-                        c.lastService,
-                        new Date(c.created_at).toLocaleDateString()
-                    ]);
+                    clientRows.push([c.name, c.phone || '', c.email || '', c.visitCount, c.totalSpent.toFixed(2), c.lastService, c.isAffiliate ? 'Yes' : 'No', c.affiliateRate ? `${c.affiliateRate}%` : '', new Date(c.created_at).toLocaleDateString()]);
                 });
                 const ws1 = XLSX.utils.aoa_to_sheet(clientRows);
-                ws1['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 35 }, { wch: 15 }];
                 XLSX.utils.book_append_sheet(wb, ws1, 'Client Directory');
-
-                // Sheet 2: Full Transaction History
                 const txRows = [['Client Name', 'Phone', 'Service', 'Amount (M)', 'Discounted', 'Notes', 'Date']];
                 allClients.forEach(c => {
-                    const sorted = [...c.services].reverse(); // oldest first
+                    const sorted = [...c.services].reverse();
                     sorted.forEach((s, idx) => {
                         const visitNum = idx + 1;
-                        txRows.push([
-                            c.name,
-                            c.phone || '',
-                            s.service_name,
-                            parseFloat(s.amount).toFixed(2),
-                            visitNum % 3 === 0 ? 'Yes (20%)' : 'No',
-                            s.notes || '',
-                            new Date(s.created_at).toLocaleDateString()
-                        ]);
+                        txRows.push([c.name, c.phone || '', s.service_name, parseFloat(s.amount).toFixed(2), visitNum % 3 === 0 ? 'Yes (20%)' : 'No', s.notes || '', new Date(s.created_at).toLocaleDateString()]);
                     });
                 });
                 const ws2 = XLSX.utils.aoa_to_sheet(txRows);
-                ws2['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 35 }, { wch: 12 }, { wch: 14 }, { wch: 30 }, { wch: 15 }];
                 XLSX.utils.book_append_sheet(wb, ws2, 'Transaction History');
-
-                const date = new Date().toISOString().slice(0, 10);
-                XLSX.writeFile(wb, `Cre8Learn_Export_${date}.xlsx`);
+                XLSX.writeFile(wb, `Cre8Learn_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
             });
 
-            // ── Event Listeners ──
+            // Event Listeners
             document.getElementById('btnNewClient').addEventListener('click', () => openModal('newClientModal'));
             document.getElementById('btnLogService').addEventListener('click', () => { loadDropdown(); openModal('logServiceModal'); });
             document.getElementById('cancelNewClient').addEventListener('click', () => closeModal('newClientModal'));
             document.getElementById('cancelLogService').addEventListener('click', () => closeModal('logServiceModal'));
             document.getElementById('cancelEditClient').addEventListener('click', () => closeModal('editClientModal'));
+            document.getElementById('cancelAffiliateSettings').addEventListener('click', () => closeModal('affiliateSettingsModal'));
+            document.getElementById('closeAffiliateDashboard').addEventListener('click', () => closeModal('affiliateDashboardModal'));
+            document.getElementById('cancelMarkPaid').addEventListener('click', () => closeModal('markPaidModal'));
             document.getElementById('closeDetailModal').addEventListener('click', () => closeModal('clientDetailModal'));
             
             document.getElementById('searchInput').addEventListener('keyup', (e) => renderTable(e.target.value));
@@ -544,7 +758,6 @@
                 const c = allClients.find(x => x.id === document.getElementById('serviceClientSelect').value);
                 const willDiscount = c && nextVisitIsDiscounted(c.visitCount);
                 document.getElementById('discountNotice').classList.toggle('hidden', !willDiscount);
-                // Re-apply price if service already selected
                 const checkedService = document.querySelector('input[name="service"]:checked');
                 if (checkedService) {
                     const base = parseFloat(checkedService.dataset.price);
@@ -556,14 +769,12 @@
                 e.preventDefault();
                 const name = document.getElementById('clientName').value.trim();
                 if (!name) return alert('Name required');
-                await supabaseClient.from('clients').insert([{
-                    name,
-                    phone: document.getElementById('clientPhone').value.trim() || null,
-                    email: document.getElementById('clientEmail').value.trim() || null
-                }]);
+                const referredByAffiliateId = document.getElementById('referredBy').value || null;
+                await supabaseClient.from('clients').insert([{ name, phone: document.getElementById('clientPhone').value.trim() || null, email: document.getElementById('clientEmail').value.trim() || null, referred_by_affiliate_id: referredByAffiliateId ? parseInt(referredByAffiliateId) : null }]);
                 closeModal('newClientModal');
                 document.getElementById('newClientForm').reset();
                 loadAllData();
+                loadAffiliatesDropdown();
                 alert('Client added');
             });
             
@@ -579,28 +790,37 @@
                 const discounted = nextVisitIsDiscounted(currentVisits);
                 const basePrice = parseFloat(service.dataset.price);
                 let amount = parseFloat(document.getElementById('serviceAmount').value) || basePrice;
-                // Enforce discount if applicable (in case user didn't override)
                 if (discounted && amount === basePrice) amount = basePrice * 0.8;
                 
-                await supabaseClient.from('services').insert([{
-                    client_id: clientId,
-                    service_name: service.value,
-                    amount,
-                    discounted,
-                    notes: document.getElementById('serviceNotes').value || null
-                }]);
+                const { data: serviceData } = await supabaseClient.from('services').insert([{ client_id: clientId, service_name: service.value, amount, discounted, notes: document.getElementById('serviceNotes').value || null }]).select();
+                
+                // Check if client was referred by an affiliate
+                const { data: clientData } = await supabaseClient.from('clients').select('referred_by_affiliate_id').eq('id', clientId).single();
+                if (clientData?.referred_by_affiliate_id) {
+                    const affiliate = affiliatesList.find(a => a.id === clientData.referred_by_affiliate_id);
+                    if (affiliate && serviceData?.[0]) {
+                        const commissionAmount = amount * (affiliate.commission_rate / 100);
+                        await supabaseClient.from('referrals').insert([{
+                            referring_affiliate_id: affiliate.id,
+                            referred_client_id: clientId,
+                            service_id: serviceData[0].id,
+                            service_name: service.value,
+                            commission_amount: commissionAmount,
+                            commission_rate: affiliate.commission_rate,
+                            commission_paid: false,
+                            status: 'pending'
+                        }]);
+                    }
+                }
+                
                 closeModal('logServiceModal');
                 document.getElementById('logServiceForm').reset();
                 document.getElementById('discountNotice').classList.add('hidden');
                 loadAllData();
                 
                 const newVisits = currentVisits + 1;
-                if (newVisits % 3 === 0) {
-                    alert(`✅ 20% discount applied! Visit #${newVisits} for ${client.name}.`);
-                } else {
-                    const nextDiscount = Math.ceil((newVisits + 1) / 3) * 3;
-                    alert(`Service logged. Next discount in ${nextDiscount - newVisits} visit(s).`);
-                }
+                if (newVisits % 3 === 0) alert(`✅ 20% discount applied! Visit #${newVisits} for ${client.name}.`);
+                else alert(`Service logged.`);
             });
             
             document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('active'); }));
