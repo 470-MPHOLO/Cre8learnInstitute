@@ -54,6 +54,18 @@
         .delete-client-btn:hover {
             background: #dc2626;
         }
+        .edit-rate-btn {
+            background: #10b981;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            margin-left: 5px;
+            cursor: pointer;
+        }
+        .edit-rate-btn:hover {
+            background: #059669;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
@@ -169,7 +181,7 @@
                             </tr>
                         </thead>
                         <tbody id="clientTableBody">
-                            <tr><td colspan="8" class="p-8 text-center text-gray-400">Loading...</td></tr>
+                            <tr><td colspan="8" class="p-8 text-center text-gray-400">Loading......</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -543,6 +555,45 @@
                 }
             }
 
+            // ── EDIT PARTNER RATE FUNCTION (NEW) ──
+            window.editPartnerRate = async function(partnerId) {
+                const partner = allPartners.find(p => p.id == partnerId);
+                if (!partner) {
+                    alert('Partner not found');
+                    return;
+                }
+                
+                const newRate = prompt(`Enter new commission rate for ${partner.name}\nCurrent rate: ${partner.commission_rate}%`, partner.commission_rate);
+                
+                if (newRate === null) return;
+                
+                const rateNum = parseFloat(newRate);
+                if (isNaN(rateNum) || rateNum < 0) {
+                    alert('Please enter a valid positive number');
+                    return;
+                }
+                
+                try {
+                    const { error } = await supabaseClient
+                        .from('affiliates_partners')
+                        .update({ commission_rate: rateNum })
+                        .eq('id', partnerId);
+                    
+                    if (error) throw error;
+                    
+                    alert(`✅ ${partner.name} commission rate updated from ${partner.commission_rate}% to ${rateNum}%`);
+                    
+                    // Refresh data
+                    await loadPartners();
+                    await loadPartnerDropdowns();
+                    viewPartnersList(); // Refresh the partners list
+                    
+                } catch (error) {
+                    console.error('Edit rate error:', error);
+                    alert('Error updating rate: ' + error.message);
+                }
+            };
+
             // ── Affiliate Functions ──
             async function loadAffiliatesDropdown() {
                 const { data, error } = await supabaseClient
@@ -638,7 +689,7 @@
                         const statusColor = r.commission_paid ? 'text-green-600' : 'text-yellow-600';
                         html += `
                             <tr class="border-b hover:bg-gray-50">
-                                <td class="p-2"><input type="checkbox" class="referralCheckbox" data-id="${r.id}" ${r.commission_paid ? 'disabled' : ''}>:</td>
+                                <td class="p-2"><input type="checkbox" class="referralCheckbox" data-id="${r.id}" ${r.commission_paid ? 'disabled' : ''}></td>
                                 <td class="p-2">${r.referred_client?.name || 'Unknown'}</td>
                                 <td class="p-2">${r.service_name || '-'}</td>
                                 <td class="p-2 text-right font-medium">M${parseFloat(r.commission_amount).toFixed(2)}</td>
@@ -649,7 +700,7 @@
                     });
                 }
                 
-                html += `</tbody>点心</div>`;
+                html += `</tbody></table></div>`;
                 document.getElementById('affiliateDashboardContent').innerHTML = html;
                 openModal('affiliateDashboardModal');
                 
@@ -714,7 +765,7 @@
                 return affiliateCode;
             }
 
-            // ── FIXED: Partner Dashboard Functions (Now Clickable!) ──
+            // ── Partner Dashboard Functions ──
             window.showPartnerDashboardFunction = async function(partnerId) {
                 console.log('Opening dashboard for partner:', partnerId);
                 
@@ -770,11 +821,11 @@
                             <td class="p-2 text-right font-medium">M${(r.commission_amount || 0).toFixed(2)}</td>
                             <td class="p-2">${isPaid ? '<span class="text-green-600">Paid</span>' : '<span class="text-yellow-600">Pending</span>'}</td>
                             <td class="p-2">${!isPaid ? `<button onclick="window.markPartnerCommissionPaidFunction(${r.id})" class="text-green-600 text-sm hover:underline">Mark Paid</button>` : '-'}</td>
-                         </tr>`;
+                          </tr>`;
                     });
                 }
                 
-                html += `</tbody>点心</div>`;
+                html += `</tbody></table></div>`;
                 document.getElementById('partnerDashboardContent').innerHTML = html;
                 openModal('partnerDashboardModal');
             };
@@ -819,13 +870,13 @@
                         <td class="p-3 font-mono text-sm">${partner.affiliate_code}</td>
                         <td class="p-3 font-medium">${partner.name}</td>
                         <td class="p-3 text-sm">${partner.phone || '-'}<br>${partner.email || '-'}</td>
-                        <td class="p-3">${partner.commission_rate}%</td>
+                        <td class="p-3">${partner.commission_rate}% <button onclick="window.editPartnerRate(${partner.id})" class="edit-rate-btn ml-2">Edit</button></td>
                         <td class="p-3 text-green-600">M${earned.toFixed(2)}</td>
                         <td class="p-3 font-bold">M${(earned - paid).toFixed(2)}</td>
                         <td class="p-3"><button onclick="window.showPartnerDashboardFunction(${partner.id})" class="text-indigo-600 text-sm hover:underline">View Dashboard</button></td>
                     </tr>`;
                 }
-                html += '</tbody>点心';
+                html += '</tbody></table>';
                 document.getElementById('partnersListContent').innerHTML = html;
                 openModal('viewPartnersModal');
             }
@@ -1146,7 +1197,7 @@
             document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('active'); }));
             document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active')); });
             
-            // Make delete functions global for onclick handlers
+            // Make functions global for onclick handlers
             window.deleteClient = deleteClient;
             window.deleteAffiliateStatus = deleteAffiliateStatus;
             
