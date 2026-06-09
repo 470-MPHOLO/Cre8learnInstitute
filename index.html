@@ -141,6 +141,12 @@
                 <button id="btnViewPartners" class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition">
                     View Partners
                 </button>
+                <button id="btnPayoutHistory" class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition">
+                    📋 Payout History
+                </button>
+                <button id="btnCommissionReport" class="bg-rose-600 hover:bg-rose-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition">
+                    📊 Commission Report
+                </button>
                 <button id="btnDownload" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition ml-auto">
                     ↓ Download Spreadsheet
                 </button>
@@ -316,6 +322,32 @@
                     <button id="closeViewPartners" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                 </div>
                 <div id="partnersListContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payout History Modal -->
+    <div id="payoutHistoryModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-4xl shadow-2xl max-h-[80vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-xl font-bold">💰 Payout History</h3>
+                    <button id="closePayoutHistory" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                </div>
+                <div id="payoutHistoryContent"><p class="text-gray-500">Loading...</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Commission Report Modal -->
+    <div id="commissionReportModal" class="modal fixed inset-0 bg-black/60 items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-4xl shadow-2xl max-h-[80vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-xl font-bold">📊 Commission Summary Report</h3>
+                    <button id="closeCommissionReport" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                </div>
+                <div id="commissionReportContent"><p class="text-gray-500">Loading...</p></div>
             </div>
         </div>
     </div>
@@ -555,7 +587,7 @@
                 }
             }
 
-            // ── EDIT PARTNER RATE FUNCTION (NEW) ──
+            // ── EDIT PARTNER RATE FUNCTION ──
             window.editPartnerRate = async function(partnerId) {
                 const partner = allPartners.find(p => p.id == partnerId);
                 if (!partner) {
@@ -583,16 +615,159 @@
                     
                     alert(`✅ ${partner.name} commission rate updated from ${partner.commission_rate}% to ${rateNum}%`);
                     
-                    // Refresh data
                     await loadPartners();
                     await loadPartnerDropdowns();
-                    viewPartnersList(); // Refresh the partners list
+                    viewPartnersList();
                     
                 } catch (error) {
                     console.error('Edit rate error:', error);
                     alert('Error updating rate: ' + error.message);
                 }
             };
+
+            // ── PAYOUT HISTORY FUNCTION ──
+            async function showPayoutHistory() {
+                const { data: clientPayments } = await supabaseClient
+                    .from('referrals')
+                    .select('*, referred_client:referred_client_id(name)')
+                    .eq('commission_paid', true)
+                    .order('paid_at', { ascending: false });
+                
+                const { data: partnerPayments } = await supabaseClient
+                    .from('external_referrals')
+                    .select('*, client:client_id(name)')
+                    .eq('commission_paid', true)
+                    .order('paid_at', { ascending: false });
+                
+                let html = '<div class="space-y-4">';
+                
+                if ((clientPayments?.length || 0) + (partnerPayments?.length || 0) > 0) {
+                    if (clientPayments?.length) {
+                        html += '<h4 class="font-bold text-lg">💸 Client Affiliate Payouts</h4>';
+                        for (const p of clientPayments) {
+                            const affiliate = affiliatesList.find(a => a.id === p.referring_affiliate_id);
+                            html += `<div class="border rounded-lg p-3 bg-gray-50 mb-2">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <span class="font-medium">${affiliate?.name || 'Unknown'}</span>
+                                        <div class="text-sm text-gray-500">Client: ${p.referred_client?.name || 'Unknown'}</div>
+                                        <div class="text-sm text-gray-500">Service: ${p.service_name || '-'}</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="font-bold text-green-600">M${parseFloat(p.commission_amount || 0).toFixed(2)}</span>
+                                        <div class="text-xs text-gray-400">Paid: ${new Date(p.paid_at).toLocaleDateString()}</div>
+                                    </div>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">📝 Receipt: ${p.notes || 'No notes'}</div>
+                            </div>`;
+                        }
+                    }
+                    
+                    if (partnerPayments?.length) {
+                        html += '<h4 class="font-bold text-lg mt-4">🤝 External Partner Payouts</h4>';
+                        for (const p of partnerPayments) {
+                            const partner = allPartners.find(pr => pr.id === p.partner_id);
+                            html += `<div class="border rounded-lg p-3 bg-gray-50 mb-2">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <span class="font-medium">${partner?.name || 'Unknown'}</span>
+                                        <div class="text-sm text-gray-500">Client: ${p.client?.name || 'Unknown'}</div>
+                                        <div class="text-sm text-gray-500">Service: ${p.service_name || '-'}</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="font-bold text-green-600">M${parseFloat(p.commission_amount || 0).toFixed(2)}</span>
+                                        <div class="text-xs text-gray-400">Paid: ${new Date(p.paid_at).toLocaleDateString()}</div>
+                                    </div>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">📝 Receipt: ${p.payment_notes || 'No notes'}</div>
+                            </div>`;
+                        }
+                    }
+                } else {
+                    html += '<p class="text-center py-8 text-gray-500">No payouts recorded yet</p>';
+                }
+                
+                html += '</div>';
+                document.getElementById('payoutHistoryContent').innerHTML = html;
+                openModal('payoutHistoryModal');
+            }
+
+            // ── COMMISSION SUMMARY REPORT FUNCTION ──
+            async function showCommissionReport() {
+                const { data: clientReferrals } = await supabaseClient.from('referrals').select('commission_amount, commission_paid, paid_at, created_at');
+                const { data: partnerReferrals } = await supabaseClient.from('external_referrals').select('commission_amount, commission_paid, paid_at, created_at');
+                
+                const clientTotalEarned = (clientReferrals || []).reduce((s, r) => s + parseFloat(r.commission_amount || 0), 0);
+                const clientTotalPaid = (clientReferrals || []).filter(r => r.commission_paid).reduce((s, r) => s + parseFloat(r.commission_amount || 0), 0);
+                const partnerTotalEarned = (partnerReferrals || []).reduce((s, r) => s + parseFloat(r.commission_amount || 0), 0);
+                const partnerTotalPaid = (partnerReferrals || []).filter(r => r.commission_paid).reduce((s, r) => s + parseFloat(r.commission_amount || 0), 0);
+                
+                const totalEarned = clientTotalEarned + partnerTotalEarned;
+                const totalPaid = clientTotalPaid + partnerTotalPaid;
+                
+                // Monthly breakdown
+                const monthlyData = new Map();
+                
+                for (const r of clientReferrals || []) {
+                    const month = new Date(r.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+                    const current = monthlyData.get(month) || { earned: 0, paid: 0 };
+                    current.earned += parseFloat(r.commission_amount || 0);
+                    if (r.commission_paid) current.paid += parseFloat(r.commission_amount || 0);
+                    monthlyData.set(month, current);
+                }
+                
+                for (const r of partnerReferrals || []) {
+                    const month = new Date(r.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+                    const current = monthlyData.get(month) || { earned: 0, paid: 0 };
+                    current.earned += parseFloat(r.commission_amount || 0);
+                    if (r.commission_paid) current.paid += parseFloat(r.commission_amount || 0);
+                    monthlyData.set(month, current);
+                }
+                
+                const sortedMonths = Array.from(monthlyData.keys()).sort((a, b) => new Date(a) - new Date(b));
+                
+                let html = `
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-indigo-50 p-4 rounded-xl text-center">
+                            <div class="text-2xl font-bold text-indigo-700">M${totalEarned.toFixed(2)}</div>
+                            <div class="text-sm">Total Commissions Earned</div>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-xl text-center">
+                            <div class="text-2xl font-bold text-green-700">M${totalPaid.toFixed(2)}</div>
+                            <div class="text-sm">Total Paid Out</div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-yellow-50 p-4 rounded-xl text-center">
+                            <div class="text-2xl font-bold text-yellow-700">M${(totalEarned - totalPaid).toFixed(2)}</div>
+                            <div class="text-sm">Outstanding Balance</div>
+                        </div>
+                        <div class="bg-emerald-50 p-4 rounded-xl text-center">
+                            <div class="text-2xl font-bold text-emerald-700">M${clientTotalEarned.toFixed(2)}</div>
+                            <div class="text-sm">Client Affiliates Earned</div>
+                        </div>
+                    </div>
+                    <h4 class="font-bold text-lg mb-3">📅 Monthly Breakdown</h4>
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50">
+                            <tr><th class="p-2 text-left">Month</th><th class="p-2 text-right">Earned</th><th class="p-2 text-right">Paid</th><th class="p-2 text-right">Outstanding</th></tr>
+                        </thead>
+                        <tbody>`;
+                
+                for (const month of sortedMonths) {
+                    const data = monthlyData.get(month);
+                    html += `<tr class="border-b">
+                        <td class="p-2">${month}</td>
+                        <td class="p-2 text-right text-green-600">M${data.earned.toFixed(2)}</td>
+                        <td class="p-2 text-right">M${data.paid.toFixed(2)}</td>
+                        <td class="p-2 text-right font-medium">M${(data.earned - data.paid).toFixed(2)}</td>
+                    </tr>`;
+                }
+                
+                html += '</tbody>赶';
+                document.getElementById('commissionReportContent').innerHTML = html;
+                openModal('commissionReportModal');
+            }
 
             // ── Affiliate Functions ──
             async function loadAffiliatesDropdown() {
@@ -689,7 +864,7 @@
                         const statusColor = r.commission_paid ? 'text-green-600' : 'text-yellow-600';
                         html += `
                             <tr class="border-b hover:bg-gray-50">
-                                <td class="p-2"><input type="checkbox" class="referralCheckbox" data-id="${r.id}" ${r.commission_paid ? 'disabled' : ''}></td>
+                                <td class="p-2"><input type="checkbox" class="referralCheckbox" data-id="${r.id}" ${r.commission_paid ? 'disabled' : ''}>:nit</td>
                                 <td class="p-2">${r.referred_client?.name || 'Unknown'}</td>
                                 <td class="p-2">${r.service_name || '-'}</td>
                                 <td class="p-2 text-right font-medium">M${parseFloat(r.commission_amount).toFixed(2)}</td>
@@ -700,7 +875,7 @@
                     });
                 }
                 
-                html += `</tbody></table></div>`;
+                html += `</tbody>点心</div>`;
                 document.getElementById('affiliateDashboardContent').innerHTML = html;
                 openModal('affiliateDashboardModal');
                 
@@ -825,7 +1000,7 @@
                     });
                 }
                 
-                html += `</tbody></table></div>`;
+                html += `</tbody>点心</div>`;
                 document.getElementById('partnerDashboardContent').innerHTML = html;
                 openModal('partnerDashboardModal');
             };
@@ -874,7 +1049,7 @@
                         <td class="p-3 text-green-600">M${earned.toFixed(2)}</td>
                         <td class="p-3 font-bold">M${(earned - paid).toFixed(2)}</td>
                         <td class="p-3"><button onclick="window.showPartnerDashboardFunction(${partner.id})" class="text-indigo-600 text-sm hover:underline">View Dashboard</button></td>
-                    </tr>`;
+                     </tr>`;
                 }
                 html += '</tbody></table>';
                 document.getElementById('partnersListContent').innerHTML = html;
@@ -952,7 +1127,7 @@
                             <button data-id="${c.id}" class="deleteClientBtn text-red-600 text-sm hover:underline">Delete</button>
                             ${c.isAffiliate && affiliateId ? `<button data-affiliate-id="${affiliateId}" class="viewAffiliate text-green-600 text-sm hover:underline">Affiliate Dash</button>` : ''}
                         </td>
-                    </tr>`;
+                     </tr>`;
                 }).join('');
                 document.getElementById('totalClients').textContent = allClients.length;
                 document.querySelectorAll('.viewHistory').forEach(b => b.addEventListener('click', () => viewHistory(b.dataset.id)));
@@ -1055,6 +1230,10 @@
             document.getElementById('btnLogService').addEventListener('click', () => { loadDropdown(); openModal('logServiceModal'); });
             document.getElementById('btnAddPartner').addEventListener('click', () => openModal('addPartnerModal'));
             document.getElementById('btnViewPartners').addEventListener('click', viewPartnersList);
+            document.getElementById('btnPayoutHistory').addEventListener('click', showPayoutHistory);
+            document.getElementById('btnCommissionReport').addEventListener('click', showCommissionReport);
+            document.getElementById('closePayoutHistory').addEventListener('click', () => closeModal('payoutHistoryModal'));
+            document.getElementById('closeCommissionReport').addEventListener('click', () => closeModal('commissionReportModal'));
             document.getElementById('cancelNewClient').addEventListener('click', () => closeModal('newClientModal'));
             document.getElementById('cancelLogService').addEventListener('click', () => closeModal('logServiceModal'));
             document.getElementById('cancelEditClient').addEventListener('click', () => closeModal('editClientModal'));
