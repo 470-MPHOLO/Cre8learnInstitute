@@ -492,7 +492,7 @@
             function openModal(id) { if (isLoggedIn) document.getElementById(id).classList.add('active'); }
             function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-            // ── DELETE CLIENT FUNCTION (NEW) ──
+            // ── DELETE CLIENT FUNCTION ──
             async function deleteClient(clientId) {
                 const client = allClients.find(c => c.id === clientId);
                 if (!client) return;
@@ -502,23 +502,13 @@
                 if (!confirmed) return;
                 
                 try {
-                    // Delete services
                     await supabaseClient.from('services').delete().eq('client_id', clientId);
-                    
-                    // Delete referrals (affiliate commissions)
                     await supabaseClient.from('referrals').delete().eq('referred_client_id', clientId);
-                    
-                    // Delete external referrals
                     await supabaseClient.from('external_referrals').delete().eq('client_id', clientId);
-                    
-                    // If this client is also an affiliate, delete their affiliate record
                     if (client.isAffiliate) {
                         await supabaseClient.from('affiliates').delete().eq('client_id', clientId);
                     }
-                    
-                    // Finally delete the client
                     const { error } = await supabaseClient.from('clients').delete().eq('id', clientId);
-                    
                     if (error) throw error;
                     
                     alert(`✅ "${client.name}" has been deleted successfully.`);
@@ -531,7 +521,7 @@
                 }
             }
 
-            // ── DELETE AFFILIATE STATUS FUNCTION (NEW) ──
+            // ── DELETE AFFILIATE STATUS FUNCTION ──
             async function deleteAffiliateStatus(clientId, affiliateId) {
                 const client = allClients.find(c => c.id === clientId);
                 const confirmed = confirm(`Remove "${client?.name}" as an affiliate?\n\nThey will remain as a regular client.\nExisting commission records will be kept.`);
@@ -553,7 +543,7 @@
                 }
             }
 
-            // ── Affiliate Functions (YOUR ORIGINAL CODE) ──
+            // ── Affiliate Functions ──
             async function loadAffiliatesDropdown() {
                 const { data, error } = await supabaseClient
                     .from('affiliates')
@@ -648,7 +638,7 @@
                         const statusColor = r.commission_paid ? 'text-green-600' : 'text-yellow-600';
                         html += `
                             <tr class="border-b hover:bg-gray-50">
-                                <td class="p-2"><input type="checkbox" class="referralCheckbox" data-id="${r.id}" ${r.commission_paid ? 'disabled' : ''}></td>
+                                <td class="p-2"><input type="checkbox" class="referralCheckbox" data-id="${r.id}" ${r.commission_paid ? 'disabled' : ''}>:</td>
                                 <td class="p-2">${r.referred_client?.name || 'Unknown'}</td>
                                 <td class="p-2">${r.service_name || '-'}</td>
                                 <td class="p-2 text-right font-medium">M${parseFloat(r.commission_amount).toFixed(2)}</td>
@@ -659,7 +649,7 @@
                     });
                 }
                 
-                html += `</tbody></table></div>`;
+                html += `</tbody>点心</div>`;
                 document.getElementById('affiliateDashboardContent').innerHTML = html;
                 openModal('affiliateDashboardModal');
                 
@@ -699,7 +689,7 @@
                 }
             };
 
-            // ── External Partner Functions (NEW ADDITION) ──
+            // ── External Partner Functions ──
             async function loadPartners() {
                 const { data, error } = await supabaseClient.from('affiliates_partners').select('*').eq('status', 'active').order('name');
                 if (!error) allPartners = data || [];
@@ -724,49 +714,123 @@
                 return affiliateCode;
             }
 
-            async function showPartnerDashboard(partnerId) {
+            // ── FIXED: Partner Dashboard Functions (Now Clickable!) ──
+            window.showPartnerDashboardFunction = async function(partnerId) {
+                console.log('Opening dashboard for partner:', partnerId);
+                
                 const partner = allPartners.find(p => p.id == partnerId);
-                if (!partner) return;
+                if (!partner) {
+                    alert('Partner not found');
+                    return;
+                }
+                
                 document.getElementById('partnerDashboardTitle').textContent = `${partner.name} - Partner Dashboard`;
-                const { data: referrals } = await supabaseClient.from('external_referrals').select(`*, client:client_id(name)`).eq('partner_id', partnerId).order('created_at', { ascending: false });
+                
+                const { data: referrals } = await supabaseClient
+                    .from('external_referrals')
+                    .select(`*, client:client_id(name)`)
+                    .eq('partner_id', partnerId)
+                    .order('created_at', { ascending: false });
+                
                 const totalEarned = (referrals || []).reduce((sum, r) => sum + parseFloat(r.commission_amount || 0), 0);
                 const totalPaid = (referrals || []).filter(r => r.commission_paid).reduce((sum, r) => sum + parseFloat(r.commission_amount || 0), 0);
-                let html = `<div class="grid grid-cols-3 gap-4 mb-6"><div class="bg-emerald-50 p-4 rounded-xl text-center"><div class="text-2xl font-bold text-emerald-700">M${totalEarned.toFixed(2)}</div><div class="text-sm">Total Earned</div></div><div class="bg-green-50 p-4 rounded-xl text-center"><div class="text-2xl font-bold text-green-700">M${totalPaid.toFixed(2)}</div><div class="text-sm">Paid</div></div><div class="bg-yellow-50 p-4 rounded-xl text-center"><div class="text-2xl font-bold text-yellow-700">M${(totalEarned - totalPaid).toFixed(2)}</div><div class="text-sm">Pending</div></div></div><div class="overflow-x-auto"><table class="w-full text-sm"><thead class="bg-gray-50"><tr><th class="p-2">Client</th><th class="p-2">Service</th><th class="p-2 text-right">Amount</th><th class="p-2 text-right">Commission</th><th class="p-2">Status</th><th class="p-2">Action</th></tr></thead><tbody>`;
-                if (!referrals || referrals.length === 0) html += '<tr><td colspan="6" class="text-center py-4 text-gray-500">No referrals yet</td></tr>';
-                else referrals.forEach(r => { 
-                    const serviceAmount = r.commission_amount / (r.commission_rate / 100);
-                    html += `<tr class="border-b"><td class="p-2">${r.client?.name || 'Unknown'}</td><td class="p-2">${r.service_name || '-'}</td><td class="p-2 text-right">M${serviceAmount.toFixed(2)}</td><td class="p-2 text-right font-medium">M${(r.commission_amount || 0).toFixed(2)}</td><td class="p-2">${r.commission_paid ? '<span class="text-green-600">Paid</span>' : '<span class="text-yellow-600">Pending</span>'}</td><td class="p-2">${!r.commission_paid ? `<button onclick="markPartnerCommissionPaid(${r.id})" class="text-green-600 text-sm hover:underline">Mark Paid</button>` : '-'}</td></tr>`; 
-                });
-                html += '</tbody></table></div>';
+                
+                let html = `
+                    <div class="grid grid-cols-3 gap-4 mb-6">
+                        <div class="bg-emerald-50 p-4 rounded-xl text-center">
+                            <div class="text-2xl font-bold text-emerald-700">M${totalEarned.toFixed(2)}</div>
+                            <div class="text-sm">Total Earned</div>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-xl text-center">
+                            <div class="text-2xl font-bold text-green-700">M${totalPaid.toFixed(2)}</div>
+                            <div class="text-sm">Paid</div>
+                        </div>
+                        <div class="bg-yellow-50 p-4 rounded-xl text-center">
+                            <div class="text-2xl font-bold text-yellow-700">M${(totalEarned - totalPaid).toFixed(2)}</div>
+                            <div class="text-sm">Pending</div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50">
+                                <tr><th class="p-2">Client</th><th class="p-2">Service</th><th class="p-2 text-right">Amount</th><th class="p-2 text-right">Commission</th><th class="p-2">Status</th><th class="p-2">Action</th></tr>
+                            </thead>
+                            <tbody>`;
+                
+                if (!referrals || referrals.length === 0) {
+                    html += '<tr><td colspan="6" class="text-center py-4 text-gray-500">No referrals yet</td></tr>';
+                } else {
+                    referrals.forEach(r => {
+                        const serviceAmount = r.commission_rate ? (r.commission_amount / (r.commission_rate / 100)) : 0;
+                        const isPaid = r.commission_paid;
+                        html += `<tr class="border-b">
+                            <td class="p-2">${r.client?.name || 'Unknown'}</td>
+                            <td class="p-2">${r.service_name || '-'}</td>
+                            <td class="p-2 text-right">M${serviceAmount.toFixed(2)}</td>
+                            <td class="p-2 text-right font-medium">M${(r.commission_amount || 0).toFixed(2)}</td>
+                            <td class="p-2">${isPaid ? '<span class="text-green-600">Paid</span>' : '<span class="text-yellow-600">Pending</span>'}</td>
+                            <td class="p-2">${!isPaid ? `<button onclick="window.markPartnerCommissionPaidFunction(${r.id})" class="text-green-600 text-sm hover:underline">Mark Paid</button>` : '-'}</td>
+                         </tr>`;
+                    });
+                }
+                
+                html += `</tbody>点心</div>`;
                 document.getElementById('partnerDashboardContent').innerHTML = html;
                 openModal('partnerDashboardModal');
-            }
+            };
 
-            window.markPartnerCommissionPaid = async function(referralId) {
-                const notes = prompt('Enter payment notes:');
+            window.markPartnerCommissionPaidFunction = async function(referralId) {
+                const notes = prompt('Enter payment notes (e.g., Paid via M-Pesa, Reference #):');
                 if (notes !== null) {
-                    await supabaseClient.from('external_referrals').update({ commission_paid: true, paid_at: new Date().toISOString(), payment_notes: notes }).eq('id', referralId);
-                    alert('Commission marked as paid');
-                    location.reload();
+                    const { error } = await supabaseClient
+                        .from('external_referrals')
+                        .update({ 
+                            commission_paid: true, 
+                            paid_at: new Date().toISOString(), 
+                            payment_notes: notes 
+                        })
+                        .eq('id', referralId);
+                    
+                    if (error) {
+                        alert('Error: ' + error.message);
+                    } else {
+                        alert('Commission marked as paid');
+                        location.reload();
+                    }
                 }
             };
 
             async function viewPartnersList() {
                 await loadPartners();
-                if (allPartners.length === 0) { document.getElementById('partnersListContent').innerHTML = '<p class="text-center py-8 text-gray-500">No affiliate partners registered.</p>'; openModal('viewPartnersModal'); return; }
+                if (allPartners.length === 0) { 
+                    document.getElementById('partnersListContent').innerHTML = '<p class="text-center py-8 text-gray-500">No affiliate partners registered.</p>'; 
+                    openModal('viewPartnersModal'); 
+                    return; 
+                }
+                
                 let html = '<table class="w-full text-left"><thead class="bg-gray-50 border-b"><tr><th class="p-3">Code</th><th class="p-3">Name</th><th class="p-3">Contact</th><th class="p-3">Rate</th><th class="p-3">Total Earned</th><th class="p-3">Balance</th><th class="p-3">Actions</th></tr></thead><tbody>';
+                
                 for (const partner of allPartners) {
                     const { data: referrals } = await supabaseClient.from('external_referrals').select('commission_amount, commission_paid').eq('partner_id', partner.id);
                     const earned = referrals?.reduce((s, r) => s + (r.commission_amount || 0), 0) || 0;
                     const paid = referrals?.filter(r => r.commission_paid).reduce((s, r) => s + (r.commission_amount || 0), 0) || 0;
-                    html += `<tr class="border-b hover:bg-gray-50"><td class="p-3 font-mono text-sm">${partner.affiliate_code}</td><td class="p-3 font-medium">${partner.name}</td><td class="p-3 text-sm">${partner.phone || '-'}<br>${partner.email || '-'}</td><td class="p-3">${partner.commission_rate}%</td><td class="p-3 text-green-600">M${earned.toFixed(2)}</td><td class="p-3 font-bold">M${(earned - paid).toFixed(2)}</td><td class="p-3"><button onclick="showPartnerDashboard(${partner.id})" class="text-indigo-600 text-sm hover:underline mr-2">View</button></td></tr>`;
+                    
+                    html += `<tr class="border-b hover:bg-gray-50">
+                        <td class="p-3 font-mono text-sm">${partner.affiliate_code}</td>
+                        <td class="p-3 font-medium">${partner.name}</td>
+                        <td class="p-3 text-sm">${partner.phone || '-'}<br>${partner.email || '-'}</td>
+                        <td class="p-3">${partner.commission_rate}%</td>
+                        <td class="p-3 text-green-600">M${earned.toFixed(2)}</td>
+                        <td class="p-3 font-bold">M${(earned - paid).toFixed(2)}</td>
+                        <td class="p-3"><button onclick="window.showPartnerDashboardFunction(${partner.id})" class="text-indigo-600 text-sm hover:underline">View Dashboard</button></td>
+                    </tr>`;
                 }
-                html += '</tbody></table>';
+                html += '</tbody>点心';
                 document.getElementById('partnersListContent').innerHTML = html;
                 openModal('viewPartnersModal');
             }
 
-            // ── Main Data Loading (YOUR ORIGINAL CODE with partner info added) ──
+            // ── Main Data Loading ──
             async function loadAllData() {
                 if (!isLoggedIn) return;
                 const { data: clients, error } = await supabaseClient.from('clients').select('*').order('created_at', { ascending: false });
@@ -1027,7 +1091,7 @@
                 
                 const { data: serviceData } = await supabaseClient.from('services').insert([{ client_id: clientId, service_name: service.value, amount, discounted, notes: document.getElementById('serviceNotes').value || null }]).select();
                 
-                // Check if client was referred by an affiliate (YOUR ORIGINAL CODE)
+                // Check if client was referred by an affiliate
                 const { data: clientData } = await supabaseClient.from('clients').select('referred_by_affiliate_id, external_referral_partner_id').eq('id', clientId).single();
                 if (clientData?.referred_by_affiliate_id) {
                     const affiliate = affiliatesList.find(a => a.id === clientData.referred_by_affiliate_id);
@@ -1047,7 +1111,7 @@
                     }
                 }
                 
-                // NEW: Check if client has an external partner referral
+                // Check if client has an external partner referral
                 if (clientData?.external_referral_partner_id && serviceData?.[0]) {
                     const partner = allPartners.find(p => p.id === clientData.external_referral_partner_id);
                     if (partner) {
@@ -1061,7 +1125,6 @@
                             commission_rate: partner.commission_rate,
                             commission_paid: false
                         }]);
-                        // Update partner's total earned
                         const { data: partnerUpdate } = await supabaseClient.from('affiliates_partners').select('total_earned').eq('id', partner.id).single();
                         await supabaseClient.from('affiliates_partners').update({ total_earned: (partnerUpdate?.total_earned || 0) + commissionAmount }).eq('id', partner.id);
                         if (!clientData?.referred_by_affiliate_id) {
