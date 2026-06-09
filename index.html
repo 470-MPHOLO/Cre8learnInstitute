@@ -42,6 +42,18 @@
             font-weight: 600;
             display: inline-block;
         }
+        .delete-client-btn {
+            background: #ef4444;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            margin-left: 5px;
+            cursor: pointer;
+        }
+        .delete-client-btn:hover {
+            background: #dc2626;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
@@ -480,6 +492,67 @@
             function openModal(id) { if (isLoggedIn) document.getElementById(id).classList.add('active'); }
             function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
+            // ── DELETE CLIENT FUNCTION (NEW) ──
+            async function deleteClient(clientId) {
+                const client = allClients.find(c => c.id === clientId);
+                if (!client) return;
+                
+                const confirmed = confirm(`⚠️ DELETE "${client.name}"?\n\nThis will delete:\n- All service history\n- All affiliate commissions from this client\n- External partner referrals\n\nThis action CANNOT be undone!`);
+                
+                if (!confirmed) return;
+                
+                try {
+                    // Delete services
+                    await supabaseClient.from('services').delete().eq('client_id', clientId);
+                    
+                    // Delete referrals (affiliate commissions)
+                    await supabaseClient.from('referrals').delete().eq('referred_client_id', clientId);
+                    
+                    // Delete external referrals
+                    await supabaseClient.from('external_referrals').delete().eq('client_id', clientId);
+                    
+                    // If this client is also an affiliate, delete their affiliate record
+                    if (client.isAffiliate) {
+                        await supabaseClient.from('affiliates').delete().eq('client_id', clientId);
+                    }
+                    
+                    // Finally delete the client
+                    const { error } = await supabaseClient.from('clients').delete().eq('id', clientId);
+                    
+                    if (error) throw error;
+                    
+                    alert(`✅ "${client.name}" has been deleted successfully.`);
+                    await loadAllData();
+                    await loadAffiliatesDropdown();
+                    
+                } catch (error) {
+                    console.error('Delete error:', error);
+                    alert('Error deleting client: ' + error.message);
+                }
+            }
+
+            // ── DELETE AFFILIATE STATUS FUNCTION (NEW) ──
+            async function deleteAffiliateStatus(clientId, affiliateId) {
+                const client = allClients.find(c => c.id === clientId);
+                const confirmed = confirm(`Remove "${client?.name}" as an affiliate?\n\nThey will remain as a regular client.\nExisting commission records will be kept.`);
+                
+                if (!confirmed) return;
+                
+                try {
+                    const { error } = await supabaseClient.from('affiliates').delete().eq('id', affiliateId);
+                    if (error) throw error;
+                    
+                    alert(`✅ "${client?.name}" is no longer an affiliate.`);
+                    closeModal('affiliateDashboardModal');
+                    await loadAllData();
+                    await loadAffiliatesDropdown();
+                    
+                } catch (error) {
+                    console.error('Delete affiliate error:', error);
+                    alert('Error removing affiliate: ' + error.message);
+                }
+            }
+
             // ── Affiliate Functions (YOUR ORIGINAL CODE) ──
             async function loadAffiliatesDropdown() {
                 const { data, error } = await supabaseClient
@@ -526,7 +599,7 @@
                 const affiliate = affiliatesList.find(a => a.id == affiliateId);
                 if (!affiliate) return;
                 
-                document.getElementById('affiliateDashboardTitle').textContent = `${affiliate.name} - Affiliate Dashboard`;
+                document.getElementById('affiliateDashboardTitle').innerHTML = `${affiliate.name} - Affiliate Dashboard <button onclick="deleteAffiliateStatus('${affiliate.client_id}', ${affiliateId})" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm ml-3">Remove Affiliate</button>`;
                 
                 const { data: referrals } = await supabaseClient
                     .from('referrals')
@@ -586,7 +659,7 @@
                     });
                 }
                 
-                html += `</tbody>赶</div>`;
+                html += `</tbody></table></div>`;
                 document.getElementById('affiliateDashboardContent').innerHTML = html;
                 openModal('affiliateDashboardModal');
                 
@@ -664,7 +737,7 @@
                     const serviceAmount = r.commission_amount / (r.commission_rate / 100);
                     html += `<tr class="border-b"><td class="p-2">${r.client?.name || 'Unknown'}</td><td class="p-2">${r.service_name || '-'}</td><td class="p-2 text-right">M${serviceAmount.toFixed(2)}</td><td class="p-2 text-right font-medium">M${(r.commission_amount || 0).toFixed(2)}</td><td class="p-2">${r.commission_paid ? '<span class="text-green-600">Paid</span>' : '<span class="text-yellow-600">Pending</span>'}</td><td class="p-2">${!r.commission_paid ? `<button onclick="markPartnerCommissionPaid(${r.id})" class="text-green-600 text-sm hover:underline">Mark Paid</button>` : '-'}</td></tr>`; 
                 });
-                html += '</tbody>赶</div>';
+                html += '</tbody></table></div>';
                 document.getElementById('partnerDashboardContent').innerHTML = html;
                 openModal('partnerDashboardModal');
             }
@@ -688,7 +761,7 @@
                     const paid = referrals?.filter(r => r.commission_paid).reduce((s, r) => s + (r.commission_amount || 0), 0) || 0;
                     html += `<tr class="border-b hover:bg-gray-50"><td class="p-3 font-mono text-sm">${partner.affiliate_code}</td><td class="p-3 font-medium">${partner.name}</td><td class="p-3 text-sm">${partner.phone || '-'}<br>${partner.email || '-'}</td><td class="p-3">${partner.commission_rate}%</td><td class="p-3 text-green-600">M${earned.toFixed(2)}</td><td class="p-3 font-bold">M${(earned - paid).toFixed(2)}</td><td class="p-3"><button onclick="showPartnerDashboard(${partner.id})" class="text-indigo-600 text-sm hover:underline mr-2">View</button></td></tr>`;
                 }
-                html += '</tbody>赶';
+                html += '</tbody></table>';
                 document.getElementById('partnersListContent').innerHTML = html;
                 openModal('viewPartnersModal');
             }
@@ -759,15 +832,17 @@
                             ${c.partnerName ? `<span class="partner-badge">${c.partnerName}</span>` : '<span class="text-gray-400 text-sm">—</span>'}
                         </td>
                         <td class="p-4 flex gap-2">
-                            <button data-id="${c.id}" class="viewHistory text-indigo-600 text-sm hover:underline">View →</button>
+                            <button data-id="${c.id}" class="viewHistory text-indigo-600 text-sm hover:underline">View</button>
                             <button data-id="${c.id}" class="editClient text-gray-500 text-sm hover:underline">Edit</button>
-                            ${c.isAffiliate && affiliateId ? `<button data-affiliate-id="${affiliateId}" class="viewAffiliate text-green-600 text-sm hover:underline">Affiliate Dashboard</button>` : ''}
+                            <button data-id="${c.id}" class="deleteClientBtn text-red-600 text-sm hover:underline">Delete</button>
+                            ${c.isAffiliate && affiliateId ? `<button data-affiliate-id="${affiliateId}" class="viewAffiliate text-green-600 text-sm hover:underline">Affiliate Dash</button>` : ''}
                         </td>
                     </tr>`;
                 }).join('');
                 document.getElementById('totalClients').textContent = allClients.length;
                 document.querySelectorAll('.viewHistory').forEach(b => b.addEventListener('click', () => viewHistory(b.dataset.id)));
                 document.querySelectorAll('.editClient').forEach(b => b.addEventListener('click', () => openEditClient(b.dataset.id)));
+                document.querySelectorAll('.deleteClientBtn').forEach(b => b.addEventListener('click', () => deleteClient(b.dataset.id)));
                 document.querySelectorAll('.makeAffiliateBtn').forEach(b => b.addEventListener('click', () => openAffiliateSettings(b.dataset.id)));
                 document.querySelectorAll('.viewAffiliate').forEach(b => b.addEventListener('click', () => {
                     const affId = b.dataset.affiliateId;
@@ -968,6 +1043,7 @@
                             commission_paid: false,
                             status: 'pending'
                         }]);
+                        alert(`✅ Service logged! Affiliate earned M${commissionAmount.toFixed(2)} commission`);
                     }
                 }
                 
@@ -988,6 +1064,9 @@
                         // Update partner's total earned
                         const { data: partnerUpdate } = await supabaseClient.from('affiliates_partners').select('total_earned').eq('id', partner.id).single();
                         await supabaseClient.from('affiliates_partners').update({ total_earned: (partnerUpdate?.total_earned || 0) + commissionAmount }).eq('id', partner.id);
+                        if (!clientData?.referred_by_affiliate_id) {
+                            alert(`✅ Service logged! External partner earned M${commissionAmount.toFixed(2)} commission`);
+                        }
                     }
                 }
                 
@@ -997,12 +1076,16 @@
                 loadAllData();
                 
                 const newVisits = currentVisits + 1;
-                if (newVisits % 3 === 0) alert(`✅ 20% discount applied! Visit #${newVisits} for ${client.name}.`);
-                else alert(`Service logged.`);
+                if (newVisits % 3 === 0) alert(`🎉 20% discount applied! Visit #${newVisits} for ${client.name}.`);
+                else if (!clientData?.referred_by_affiliate_id && !clientData?.external_referral_partner_id) alert(`Service logged.`);
             });
             
             document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('active'); }));
             document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active')); });
+            
+            // Make delete functions global for onclick handlers
+            window.deleteClient = deleteClient;
+            window.deleteAffiliateStatus = deleteAffiliateStatus;
             
         });
     </script>
